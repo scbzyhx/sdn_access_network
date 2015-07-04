@@ -10,7 +10,7 @@ from ryu.ofproto.ofproto_v1_3_parser import OFPMatch
 #@req, an Request object,including all info of request
 #@flow, indicate an flow, and OFPMatch object, but just some of its' field
 #@action, undefined
-class Request(EventBase):
+class Req(EventBase):
     def __init__(self,req,flow,action):
         self.req = req
         self.flow = flow
@@ -19,7 +19,7 @@ class Request(EventBase):
 #
 #@req is an object of Request
 #@status, means sucess or failure
-class Response(EventBase):
+class Reply(EventBase):
     def __init__(self,req,status = "success"):
         self.req = req
         self.status = status

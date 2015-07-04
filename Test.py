@@ -5,13 +5,13 @@ from ryu.controller.handler import CONFIG_DISPATCHER,MAIN_DISPATCHER
 from ryu.ofproto import ofproto_v1_3
 from ryu.controller import dpset
 
-from events import Request as Req
+from events import Req as Req
 import events
 class Test(app_manager.RyuApp):
 ##   _CONTEXTS = {"RestRequestAPI":RestRequestAPI,
 ##                 "wsgi":WSGIApplication,
 ##                 "dpset":dpset.DPSet}\
-    _EVENTS=[events.Response]
+    _EVENTS=[events.Reply]
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
     def __init__(self,*args,**kwargs):
         print "Test"
@@ -28,6 +28,6 @@ class Test(app_manager.RyuApp):
         print "handler"
 #   @handler.set_ev_cls(ofp_event.EventOFPSwitchFeatures,CONFIG_DISPATCHER)
 #    def hehe(self,ev):
-        self.send_event_to_observers(events.Response(ev,"success"))
+        self.send_event_to_observers(events.Reply(ev,"success"))
         
     

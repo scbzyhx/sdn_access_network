@@ -1,4 +1,4 @@
-# Copyright (C) 2013 Nippon Telegraph and Telephone Corporation.
+# Nippon Telegraph and Telephone Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,25 +35,15 @@ from ryu.lib import dpid as dpid_lib
 from ryu.lib import hub
 from ryu.lib import mac as mac_lib
 from ryu.lib import addrconv
-from ryu.lib.packet import arp
-from ryu.lib.packet import ethernet
-from ryu.lib.packet import icmp
-from ryu.lib.packet import ipv4
-from ryu.lib.packet import packet
-from ryu.lib.packet import tcp
-from ryu.lib.packet import udp
-from ryu.lib.packet import vlan
-from ryu.ofproto import ether
-from ryu.ofproto import inet
 from ryu.ofproto import ofproto_v1_0
 from ryu.ofproto import ofproto_v1_2
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib import hub
 
-from events import Request as Req
-from ryu.controller.handler import set_ev_cls
+from events import Req
 from Test import Test
 import events
+from check import Check
 # =============================
 #          REST API
 # =============================
@@ -68,30 +58,31 @@ UINT16_MAX = 0xffff
 UINT32_MAX = 0xffffffff
 UINT64_MAX = 0xffffffffffffffff
 
-ETHERNET = ethernet.ethernet.__name__
-VLAN = vlan.vlan.__name__
-IPV4 = ipv4.ipv4.__name__
-ARP = arp.arp.__name__
-ICMP = icmp.icmp.__name__
-TCP = tcp.tcp.__name__
-UDP = udp.udp.__name__
+#ETHERNET = ethernet.ethernet.__name__
+#VLAN = vlan.vlan.__name__
+#IPV4 = ipv4.ipv4.__name__
+#ARP = arp.arp.__name__
+#ICMP = icmp.icmp.__name__
+#TCP = tcp.tcp.__name__
+#UDP = udp.udp.__name__
 
 MAX_SUSPENDPACKETS = 50  # Threshold of the packet suspends thread count.
 
-ARP_REPLY_TIMER = 2  # sec
-OFP_REPLY_TIMER = 1.0  # sec
-CHK_ROUTING_TBL_INTERVAL = 1800  # sec
+REST_RESULT = 'reult'
+REST_DETAILS = 'default'
+REST_OK = 'ok'
+REST_NG = 'success'
+REST_ALL = 'failure'
+
 
 SWITCHID_PATTERN = dpid_lib.DPID_PATTERN + r'|all'
 VLANID_PATTERN = r'[0-9]{1,4}|all'
-
-VLANID_NONE = 0
-VLANID_MIN = 2
 
 USER_PATTERN=""
 FLOW_PATTERN=""
 ACTION_PATTERN=""
 
+REQ_TIMEOUT = 5
 
 
 class NotFoundError(RyuException):
@@ -109,13 +100,18 @@ class RestRequestAPI(app_manager.RyuApp):
 
     _CONTEXTS = {'dpset': dpset.DPSet,
                  'wsgi': WSGIApplication,
-                 'test':Test}
+                 'test': Test,
+                 'check':Check
+                }
     _EVENTS = [Req]
 
     def __init__(self, *args, **kwargs):
         super(RestRequestAPI, self).__init__(*args, **kwargs)
         RequestController.set_logger(self.logger)
+		
+#DEBUG
         self.logger.setLevel(logging.DEBUG)
+#
         wsgi = kwargs['wsgi']
         self.requests = {}
         self.data = {'reqs': self.requests,"RyuApp" : self}
@@ -131,16 +127,15 @@ class RestRequestAPI(app_manager.RyuApp):
                        requirement=requirements,
                        action='req_bw',
                        conditions=dict(method=['GET']))
-    @set_ev_cls(events.Response)
+    @set_ev_cls(events.Reply)
     def RespHandler(self,ev):
+        self.logger.debug("GOT reply")
         ev.req.evt.set()
     def sendEvent(self,req):
         """
             send request to check module or policy module 
         """
-        print dir(self.logger)
         self.logger.debug("sendEvent")
-        #self.send_event('Test',req)
         self.send_event_to_observers(req)
 
 
@@ -193,7 +188,7 @@ class RequestController(ControllerBase):
         fmt_str = '[RT][%(levelname)s] Request: %(message)s'
         hdlr.setFormatter(logging.Formatter(fmt_str))
         cls._LOGGER.addHandler(hdlr)
-#    @rest_command
+    @rest_command
     def req_bw(self,req,**_kwargs):
         """1. add something to self.reqs in addtion to and hub.Event()
            2. self.app.SendEvent
@@ -204,10 +199,13 @@ class RequestController(ControllerBase):
         evt = hub.Event()
         tmpReq.evt = evt
         self.app.sendEvent(tmpReq)
-#print req.remote_addr
-#       print _kwargs
-        evt.wait(10)
-        return "success"
+        try:
+            evt.wait(REQ_TIMEOUT)
+            self._LOGGER.info("Request SUCCESS")
+            return {REST_RESULT:REST_OK,REST_DETAILS:"request sucess!"}
+        except hub.Timeout as timeout:
+            self._LOGGER.info("Request TIMEOUT")
+            return {REST_RESULT:REST_NG,REST_DETAILS:timeout}
 
 
 #lass RouterController(ControllerBase):
