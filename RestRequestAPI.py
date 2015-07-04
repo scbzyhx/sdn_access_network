@@ -53,6 +53,7 @@ from ryu.lib import hub
 from events import Request as Req
 from ryu.controller.handler import set_ev_cls
 from Test import Test
+import events
 # =============================
 #          REST API
 # =============================
@@ -109,17 +110,12 @@ class RestRequestAPI(app_manager.RyuApp):
     _CONTEXTS = {'dpset': dpset.DPSet,
                  'wsgi': WSGIApplication,
                  'test':Test}
-#_EVENTS = [Req]
+    _EVENTS = [Req]
 
     def __init__(self, *args, **kwargs):
         super(RestRequestAPI, self).__init__(*args, **kwargs)
-        self.name = "RestRequestAPI"
-#       print self._CONTEXTS
-        # logger configure
         RequestController.set_logger(self.logger)
-#print kwargs
-#       print args
-        
+        self.logger.setLevel(logging.DEBUG)
         wsgi = kwargs['wsgi']
         self.requests = {}
         self.data = {'reqs': self.requests,"RyuApp" : self}
@@ -134,21 +130,18 @@ class RestRequestAPI(app_manager.RyuApp):
         mapper.connect('request',path,controller=RequestController,
                        requirement=requirements,
                        action='req_bw',
-                       conditions=dict(method=['POST']))
-#   @set_ev_cls(Req)
-#   def RespHandler(self,ev):
-#       """
-#           handler
-#       """
-#       print "in handler\n\n"
-#print ev
+                       conditions=dict(method=['GET']))
+    @set_ev_cls(events.Response)
+    def RespHandler(self,ev):
+        ev.req.evt.set()
     def sendEvent(self,req):
         """
             send request to check module or policy module 
         """
-        print "sendEvent"
-        self.send_event('Test',req)
-#self.send_event_to_observers(req)
+        print dir(self.logger)
+        self.logger.debug("sendEvent")
+        #self.send_event('Test',req)
+        self.send_event_to_observers(req)
 
 
 #       path = '/router/{switch_id}'
@@ -196,7 +189,8 @@ class RequestController(ControllerBase):
         cls._LOGGER = logger
         cls._LOGGER.propagate = False
         hdlr = logging.StreamHandler()
-        fmt_str = '[RT][%(levelname)s] Request=%(sw_id)s: %(message)s'
+        #fmt_str = '[RT][%(levelname)s] Request=%(sw_id)s: %(message)s'
+        fmt_str = '[RT][%(levelname)s] Request: %(message)s'
         hdlr.setFormatter(logging.Formatter(fmt_str))
         cls._LOGGER.addHandler(hdlr)
 #    @rest_command
@@ -206,10 +200,14 @@ class RequestController(ControllerBase):
            3. event.wait() 
         """
         self.reqs[req.client_addr] = _kwargs
-        self.app.sendEvent(Req(1,2,3))
+        tmpReq = Req(req,2,3)
+        evt = hub.Event()
+        tmpReq.evt = evt
+        self.app.sendEvent(tmpReq)
 #print req.remote_addr
 #       print _kwargs
-        hub.Event().wait(10)
+        evt.wait(10)
+        return "success"
 
 
 #lass RouterController(ControllerBase):

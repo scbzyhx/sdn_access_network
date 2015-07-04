@@ -15,6 +15,14 @@ class Request(EventBase):
         self.req = req
         self.flow = flow
         self.action = action
+
+#
+#@req is an object of Request
+#@status, means sucess or failure
+class Response(EventBase):
+    def __init__(self,req,status = "success"):
+        self.req = req
+        self.status = status
 if __name__ == "__main__":
     "test"
     print "test"
