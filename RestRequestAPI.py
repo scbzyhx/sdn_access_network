@@ -43,7 +43,9 @@ from ryu.lib import hub
 from events import Req
 from Test import Test
 import events
-from check import Check
+from filtering  import Filter
+from policy import Policy
+from NIB import NIB
 # =============================
 #          REST API
 # =============================
@@ -100,8 +102,11 @@ class RestRequestAPI(app_manager.RyuApp):
 
     _CONTEXTS = {'dpset': dpset.DPSet,
                  'wsgi': WSGIApplication,
-                 'test': Test,
-                 'check':Check
+#                 'test': Test,
+                 'filter':Filter,
+                 'policy':Policy,
+                 'nib':NIB
+#'check':Check
                 }
     _EVENTS = [Req]
 
@@ -127,6 +132,7 @@ class RestRequestAPI(app_manager.RyuApp):
                        requirement=requirements,
                        action='req_bw',
                        conditions=dict(method=['GET']))
+#TODO
     @set_ev_cls(events.Reply)
     def RespHandler(self,ev):
         self.logger.debug("GOT reply")
@@ -199,6 +205,7 @@ class RequestController(ControllerBase):
         evt = hub.Event()
         tmpReq.evt = evt
         self.app.sendEvent(tmpReq)
+        #TODO
         try:
             evt.wait(REQ_TIMEOUT)
             self._LOGGER.info("Request SUCCESS")

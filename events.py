@@ -23,6 +23,14 @@ class Reply(EventBase):
     def __init__(self,req,status = "success"):
         self.req = req
         self.status = status
+
+#
+#just a wraper event of Req  between filtering and policy
+#@req, an object of Req
+class ReqWrapper(EventBase):
+    def __init__(self,req):
+        self.req = req
+
 if __name__ == "__main__":
     "test"
     print "test"
