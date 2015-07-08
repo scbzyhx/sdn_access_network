@@ -29,11 +29,13 @@ class OVSSwitch(OVSBridge):
             
 
             #initialization
-#self.del_qos(port.port_name)
+            #first clean
+            self.del_qos(port.port_name)
+
             self.set_qos(port.port_name)
             self._addDefaultQueue(port.port_name)
 #            self.delQueue(port.ofport,[0])
-            self.del_qos(port.port_name)
+#            self.del_qos(port.port_name)
             #set default route at table_id:0, 
             
 #            match = parser.OFPMatch()

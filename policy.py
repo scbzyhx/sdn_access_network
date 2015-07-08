@@ -9,6 +9,7 @@ from eventlet import semaphore
 from ryu.base import app_manager
 from ryu.controller.handler import set_ev_cls
 from ryu.controller.event import EventBase
+from ryu.lib import hub
 
 from events import Req
 from events import Reply
@@ -34,6 +35,11 @@ class Policy(app_manager.RyuApp):
         
         self.requestQ = [] #a request queue
         self.sem = semaphore.Semaphore(1) #TO protect self.requestQ
+    #overrides to do start two threads
+    def start(self):
+        self.threads.append(hub.spawn(self._event_loop))
+        self.threads.append(hub.spawn(self.replyRequest))
+#self.logger.debug("hello world")
 
 #TODO
     @set_ev_cls(ReqWrapper)
@@ -49,12 +55,14 @@ class Policy(app_manager.RyuApp):
 #self.send_event_to_observers(Reply(ev.req,"success"))
 #TODO   
     def replyRequest(self):
-        while True:
+        while self.is_active:
             #do something
             semTmp = None
+#            self.logger.debug("in reply thread")
             with self.sem:
                 semTmp = self.requestQ
                 self.requestQ = []
+                hub.sleep(10)
             
             """
             Now really reply to requests
