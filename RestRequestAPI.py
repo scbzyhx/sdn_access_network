@@ -39,6 +39,7 @@ from ryu.ofproto import ofproto_v1_0
 from ryu.ofproto import ofproto_v1_2
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib import hub
+from ryu.controller.dpset import DPSet
 
 from events import Req
 from Test import Test
@@ -46,6 +47,7 @@ import events
 from filtering  import Filter
 from policy import Policy
 from NIB import NIB
+from simple_switch_13 import SimpleSwitch13
 # =============================
 #          REST API
 # =============================
@@ -105,7 +107,9 @@ class RestRequestAPI(app_manager.RyuApp):
 #                 'test': Test,
                  'filter':Filter,
                  'policy':Policy,
-                 'nib':NIB
+                 'nib':NIB,
+                 'dpset':DPSet,
+                 'simpleswitch13':SimpleSwitch13
 #'check':Check
                 }
     _EVENTS = [Req]

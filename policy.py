@@ -33,7 +33,7 @@ class Policy(app_manager.RyuApp):
         self.logger.debug("Ininitializing Policy")
         
         self.requestQ = [] #a request queue
-        self.sem = semaphore.Semaphore(1)
+        self.sem = semaphore.Semaphore(1) #TO protect self.requestQ
 
 #TODO
     @set_ev_cls(ReqWrapper)
@@ -43,7 +43,10 @@ class Policy(app_manager.RyuApp):
         """
         #put it into queueQ
         self.logger.debug("ReqWrapper %s",type(ev))
-        self.send_event_to_observers(Reply(ev.req,"success"))
+
+        with self.sem:
+            self.requestQ.append(ev.req)
+#self.send_event_to_observers(Reply(ev.req,"success"))
 #TODO   
     def replyRequest(self):
         while True:
@@ -57,5 +60,7 @@ class Policy(app_manager.RyuApp):
             Now really reply to requests
             """
             #need to sleep?
+
+            #self.send_event_to_observers(Reply())
 
 
