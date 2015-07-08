@@ -39,39 +39,37 @@ class NewVSCtl(VSCtl):
         command.result = results
 
     #TODO: really remove qos from database, and all of its queues
-#   @overrides(VSCtl)
-    def _del_qos_(self, ctx, port_name):
+    @overrides(VSCtl)
+    def _del_qos(self, ctx, port_name):
         assert port_name is not None
     
         ctx.populate_cache()
         vsctl_port = ctx.find_port(port_name, True)
-        vsctl_qos = vsctl_port.qos
-         
+        vsctl_qos = vsctl_port.qos         
+        ctx.del_qos(vsctl_qos)
+
         ovsrec_qos = vsctl_qos.qos_cfg[0] #Row
-#vsctl_queue = vsctl_qos.queues.pop() #VSCtlQoS
-#LOG.debug(type(ovsrec_qos))
-#        LOG.debug(dir(ovsrec_qos))
-#        LOG.debug(ovsrec_qos.uuid)
-#        LOG.debug(ovsrec_qos._data['queues'].to_python())
-#        LOG.debug(dir(ovsrec_qos.uuid))
-#        ovsrec_queue = ovsrec_qos.queues[6]  #Row
-#        LOG.debug(vsctl_qos.qos_cfg[dd0].queues)
-#        LOG.debug(type(vsctl_qos.qos_cfg[0].queues))
-#        LOG.debug(vsctl_qos.queues.pop())
+#ovsrec_qos.delete()
+#        self._notify_change(ovsrec_qos)
         for k,queue in vsctl_qos.qos_cfg[0].queues.items():
 #ovsrec_queue = ovsrec_qos.queues[queue]
-             LOG.debug("list queue %s",queue)
+             queue.delete()
+             self._notify_change(queue)
+#LOG.debug("list queue %s",queue)
              """VSCtlContext._column_delete(ovsrec_qos, \
                                         vswitch_idl.OVSREC_QOS_COL_QUEUES,\
                                         queue)"""
-             value = getattr(ovsrec_qos,vswitch_idl.OVSREC_QOS_COL_QUEUES)
+        """             value = getattr(ovsrec_qos,vswitch_idl.OVSREC_QOS_COL_QUEUES)
              for k,v in value.items():
                  if v == queue:
                      del value[k]
                      setattr(ovsrec_qos,vswitch_idl.OVSREC_QOS_COL_QUEUES,value)
                      LOG.debug("queue.delete %s ",queue.delete())
-        vsctl_qos.queues = None
+            vsctl_qos.queues = None
+        """
 
+        ovsrec_qos.delete()
+        self._notify_change(ovsrec_qos)
 
     #override _run_command to add del-queue
     @overrides(VSCtl)
@@ -168,6 +166,12 @@ class NewVSCtl(VSCtl):
                 ovsrec_queues.append(v)
         return ovsrec_queues
    
+    """It is import, Transction check the _txn_rows, We can check this by commit method of Transaction
+       But for table that is not root(I do not know what does root mean),whether it is delete is depends to ovsdb-server itself
+
+    """
+    def _notify_change(self,ovsrec_row):
+        self.txn._txn_rows[ovsrec_row.uuid] = ovsrec_row
     def _del_queue(self,ctx,port_name,queue_ids):
         assert port_name is not None
         
@@ -185,6 +189,10 @@ class NewVSCtl(VSCtl):
             if v in ovsrec_queues:
                 del value[k]
                 tmp  = v.delete()
+                self._notify_change(v)
+                LOG.debug("delete queue %s",v)
+                LOG.debug("after delete _change: %s",dir(v))
+                LOG.debug("after delete _change: %s",v._changes)
                 LOG.debug("queue.delete, But I don't know if it is OK. action's return: %s ",tmp)
         
         setattr(ovsrec_qos,vswitch_idl.OVSREC_QOS_COL_QUEUES,value)

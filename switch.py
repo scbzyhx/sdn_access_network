@@ -8,6 +8,7 @@ from newvsctl import NewVSCtl
 LOG =logging.getLogger(__name__)
 LOG.setLevel(logging.DEBUG)
 
+
 class OVSSwitch(OVSBridge):
     def __init__(self,CONF,datapath_id,ovsdb_addr,timeout=None,exception=None):
         super(OVSSwitch,self).__init__(CONF,datapath_id,ovsdb_addr,5,exception)
@@ -16,19 +17,23 @@ class OVSSwitch(OVSBridge):
         #objects are VifPort object in self.ports
         self.ports = {} #contain all ports, in which port_no is key
         portList = self.get_external_ports()
+#        self.testDeletePort(self.br_name)
+        
         for port in portList:
+#        for x in range(1):
             """queues stored all queue number to avoid collisions
                lookup is faster in set than in list
             """
             self.ports[port.ofport] = port
-
             port.queues = set()
+            
 
             #initialization
-            self.del_qos(port.port_name)
+#self.del_qos(port.port_name)
             self.set_qos(port.port_name)
             self._addDefaultQueue(port.port_name)
-
+#            self.delQueue(port.ofport,[0])
+            self.del_qos(port.port_name)
             #set default route at table_id:0, 
             
 #            match = parser.OFPMatch()
@@ -99,9 +104,12 @@ class OVSSwitch(OVSBridge):
     def getPort(self,portNo):
         return self.ports.get(portNo,None)
 
+    def delQueue(self,ofport,queues):
+        portName = self.ports[ofport].port_name
+        self._delQueue(portName,queues)
     """queues is a list of integer
     """
-    def delQueue(self,portName,queues):
+    def _delQueue(self,portName,queues):
         cmd = vsctl.VSCtlCommand(
                 'del-queue',
                 [portName,queues])
@@ -109,4 +117,12 @@ class OVSSwitch(OVSBridge):
         if cmd.result:
             return cmd.result
         return None
-
+    def testDeletePort(self,br_name):
+        cmd = vsctl.VSCtlCommand(
+                'del-port',
+                [br_name]
+                )
+        self.run_command([cmd])
+        if cmd.result:
+            return self.result
+        return None

@@ -66,7 +66,7 @@ class NIB(app_manager.RyuApp):
         parser = datapath.ofproto_parser
 
         remoteIP = "tcp:"+datapath.socket.getpeername()[0] + ":" + CTRL_PORT
-        self.logger.debug(dir(datapath))
+#self.logger.debug(dir(datapath))
         if ev.state == MAIN_DISPATCHER:
             if not datapath.id in self.dps:
                 self.logger.debug("register datapath: %016x",datapath.id)
