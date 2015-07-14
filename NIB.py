@@ -45,11 +45,15 @@ class NIB(app_manager.RyuApp):
     def getSwitch(self,datapathID):
         return self.dps.get(datapathID)
 
-    def addQueue(self,datapathID,port_no,vsctlqueue):
+    #@queues are a list of dict,
+    #each dict contains two keys: "min-rate" and "max-rate", the value are strings too
+    #queue["queue-id"] is the queue ID that stored
+    #
+    def addQueue(self,datapathID,port_no,queues_desc):
         """add queue to 
         """
         ovsswitch = self.dps[datapathID]
-        ovsswitch.setQueues(port_no,vsctlqueue)
+        return ovsswitch.setQueues(port_no,queues_desc) #return True or False
     
 
     def delQueue(self,datapathID,port_no,queueID):

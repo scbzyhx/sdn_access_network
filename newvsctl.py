@@ -38,7 +38,6 @@ class NewVSCtl(VSCtl):
             results.append(ovsrec_queue)
         command.result = results
 
-    #TODO: really remove qos from database, and all of its queues
     @overrides(VSCtl)
     def _del_qos(self, ctx, port_name):
         assert port_name is not None
@@ -46,11 +45,15 @@ class NewVSCtl(VSCtl):
         ctx.populate_cache()
         vsctl_port = ctx.find_port(port_name, True)
         vsctl_qos = vsctl_port.qos         
-        ctx.del_qos(vsctl_qos)
+#ctx.del_qos(vsctl_qos)a
+        if vsctl_qos.qos_cfg == None or len(vsctl_qos.qos_cfg) == 0:
+            return
 
         ovsrec_qos = vsctl_qos.qos_cfg[0] #Row
+        LOG.debug(type(vsctl_qos.qos_cfg))
 #ovsrec_qos.delete()
 #        self._notify_change(ovsrec_qos)
+        
         for k,queue in vsctl_qos.qos_cfg[0].queues.items():
 #ovsrec_queue = ovsrec_qos.queues[queue]
              queue.delete()
@@ -68,6 +71,7 @@ class NewVSCtl(VSCtl):
             vsctl_qos.queues = None
         """
 
+        ctx.del_qos(vsctl_qos)
         ovsrec_qos.delete()
         self._notify_change(ovsrec_qos)
 
@@ -130,6 +134,7 @@ class NewVSCtl(VSCtl):
             'set-queue': (self._pre_cmd_set_queue, self._cmd_set_queue),
             'del-queue': (self._pre_cmd_del_queue,self._cmd_del_queue),
             'del-qos': (self._pre_get_info, self._cmd_del_qos),
+            'set-queue-config':(self._pre_cmd_set_queue,self._cmd_set_queue_config),
             # for quantum_adapter
             'list-ifaces-verbose': (self._pre_cmd_list_ifaces_verbose,
                                     self._cmd_list_ifaces_verbose),
@@ -179,7 +184,6 @@ class NewVSCtl(VSCtl):
         vsctl_port = ctx.find_port(port_name, True)
         vsctl_qos = vsctl_port.qos
         
-#ovsrec_port = vsctl_port.port_cfg
         ovsrec_qos = vsctl_qos.qos_cfg[0]
 
         ovsrec_queues = self._get_queues(ovsrec_qos,queue_ids)
@@ -197,5 +201,44 @@ class NewVSCtl(VSCtl):
         
         setattr(ovsrec_qos,vswitch_idl.OVSREC_QOS_COL_QUEUES,value)
         LOG.debug("in _del_queue, I have removed queue from qos")
+
+    #commands, including, port_name,and configureation
+    def _cmd_set_queue_config(self,ctx,command):
+        """modify a queue's configuration
+        """
+        ctx.populate_cache()
+#port_name = command.args[0]
+#queue_ids = command.args[1]
+        configs = command.args[0] #each config including port_name and queue_id
+        for config in configs:
+            queue_id = config.getdefault("queue-id",None)
+            port_name = config.getdefault("port_name",None)
+            priority = config.getdefault("priority",None)
+            max_rate = config.getdefault("max-rate",None)
+            min_rate = config.getdefault("min-rate",None)
+            
+            assert port_name is not None
+            assert queue_id is not None
+            vsctl_port = ctx.find_port(port_name,True)
+            vsctl_qos = vsctl_port.qos
+
+            assert len(vsctl_port.qos) != 0 
+            ovsrec_qos = vsctl_qos.qos_cfg[0]
+            
+            ovsrec_queues = self._get_queues(ovsrec_qos,[queue_id])
+            assert len(ovsrec_queues) != 0
+         
+            ovsrec_queue = ovsrec_queues[0]
+            value = getattr(ovsrec_queue,vswitch_idl.OVSREC_QUEUE_COL_OTHER_CONFIG)
+
+            if max_rate is not None:
+                value["max-rate"] = max_rate
+            if min_rate is not None:
+                value["min-rate"] = min_rate
+            if priority is not None:
+                value["priority"] = priority
+            setattr(ovsrec_queue,vswitch_idl,OVSREC_QUEUE_COL_OTHER_CONFIG)
+            self._notify_change(ovsrec_queue)
+            LOG.debug("set attributes queue = %d",queue_id)
 
 

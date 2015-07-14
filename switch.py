@@ -1,4 +1,5 @@
 import logging
+import copy
 
 #from ofproto.ofproto_v1_3_parser import OFPInstructionGotoTable
 from ryu.lib.ovs.bridge import OVSBridge
@@ -7,6 +8,12 @@ from ryu.lib.ovs import vsctl
 from newvsctl import NewVSCtl
 LOG =logging.getLogger(__name__)
 LOG.setLevel(logging.DEBUG)
+
+
+#from high to lower
+TOTAL_QUEUE =  18
+QPOOL = [{"min-rate":"4000","num":6},{"min-rate":"2000","num":6},{"min-rate":"1000","num":6}]
+
 
 
 class OVSSwitch(OVSBridge):
@@ -32,8 +39,9 @@ class OVSSwitch(OVSBridge):
             #first clean
             self.del_qos(port.port_name)
 
-            self.set_qos(port.port_name)
+            self.set_qos(port.port_name,"linux-htb","10000000")
             self._addDefaultQueue(port.port_name)
+            self.setupPool(port)
 #            self.delQueue(port.ofport,[0])
 #            self.del_qos(port.port_name)
             #set default route at table_id:0, 
@@ -50,7 +58,35 @@ class OVSSwitch(OVSBridge):
             self.set_qos(port.port_name,"linux-htb",None,  \
              [{"max-rate":"10000","min-rate":"10","queue-id":6},{"max-rate":'1000',"queue-id":1}])
             self.delQueue(port.port_name,[6])
-            """
+           """
+    def setupPool(self,port):
+        """set pools which defined in global POOL variable
+        """
+        port.queuePool = {} #[queue-id] = port_dict
+        port.queuePool.setdefault("free",[]) #store free queues ,id
+        port.queuePool.setdefault("busy",[]) #store busy queues ,id
+        port.queueLevel = {} #[level] = {id:level,queues:[],config:{"min-rate":int,"max-rate":"","priority":prio,}}
+        
+        total = 0
+
+        configs = copy.deepcopy(QPOOL)
+        for i,config in enumerate(configs):
+            port.queueLevel[i] = config #{min-rate,and number}
+            total = total + config["num"]
+
+        queue_config = [copy.copy({"min-rate":"1","max-rate":"1","priority":2}) for i in xrange(total)]
+        self.setQueues(port.ofport,queue_config)
+        for queue in queue_config:
+            LOG.debug(queue)
+            port.queuePool["free"].append(queue["queue-id"])
+
+        
+            
+
+
+    #overrides to return state
+    def run_command(self, commands):
+        return self.vsctl.run_command(commands, self.timeout, self.exception)
     #port is VifPort object, 
     def _addDefaultQueue(self,portName):
         """
@@ -58,18 +94,22 @@ class OVSSwitch(OVSBridge):
         """
         #TODO: more description about queue
         #And including priority
-        queue_descs = [ {"queue-id":0,"min-rate":"1"},{"queue-id":1,"min-rate":"1"}]
+        queue_descs = [ {"queue-id":0,"min-rate":"10000"},{"queue-id":1,"min-rate":"1000"}]
         self._setQueues(portName,queue_descs)
 
+    
     #ofport, is the number of openflow switch(int)
     #here, I addd queue-id to queue dict
     #queue-id is store in queues
     def setQueues(self,ofport,queues):
         port =  self.ports.get(ofport,None)
+#        LOG.debug("before None == port")
         if None == port:
             LOG.debug("no port_no:%d",ofport)
             return False
+#        LOG.debug("after None == port")
 
+        queuesSet = set()
         startID = 2
         for queue in queues:
             
@@ -78,10 +118,18 @@ class OVSSwitch(OVSBridge):
                 startID += 1
 
             queue["queue-id"] = startID
-            port.queues.add(startID)
+            queuesSet.add(startID)
+            #port.queues.add(startID)
             startID += 1
-        
-        return self._setQueues(port.port_name,queues)
+        #if successed, _setQueues return and command.result which is a list of Row object
+        LOG.debug("[in setQueues]:queues Set before __setQueues: %s",port.queues)
+        results = self._setQueues(port.port_name,queues)
+        if results is not None:
+            port.queues = port.queues.union(queuesSet)
+            LOG.debug("[in setQueues]:queues Set after successful  __setQueues: %s",port.queues)
+            return True
+        else:
+            return False
 
         
         

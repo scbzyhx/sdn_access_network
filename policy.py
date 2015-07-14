@@ -37,7 +37,8 @@ class Policy(app_manager.RyuApp):
         self.sem = semaphore.Semaphore(1) #TO protect self.requestQ
     #overrides to do start two threads
     def start(self):
-        self.threads.append(hub.spawn(self._event_loop))
+        super(Policy,self).start()
+        #self.threads.append(hub.spawn(self._event_loop))
         self.threads.append(hub.spawn(self.replyRequest))
 #self.logger.debug("hello world")
 

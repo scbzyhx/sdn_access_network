@@ -117,7 +117,8 @@ class RestRequestAPI(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(RestRequestAPI, self).__init__(*args, **kwargs)
         RequestController.set_logger(self.logger)
-		
+        if self.CONF.enable_debugger:
+            self.logger.setLevel(logging.DEBUG)
 #DEBUG
         self.logger.setLevel(logging.DEBUG)
 #
