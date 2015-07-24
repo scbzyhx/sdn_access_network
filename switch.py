@@ -13,10 +13,13 @@ LOG =logging.getLogger(__name__)
 
 #from high to lower
 TOTAL_QUEUE =  18
-QPOOL = [{"min-rate":"4000","num":6},{"min-rate":"2000","num":6},{"min-rate":"1000","num":6}]
+QPOOL = [{"min-rate":"4000000","num":6},{"min-rate":"2000000","num":6},{"min-rate":"1000000","num":6}]
 
+DP = 4
 
 TIME = 30
+alpha = 0.5
+
 MAXLEN = 500
 MAX_QOS_RATE = "10000000"
 VIDEO_BANDWIDTH = 8000000
@@ -80,7 +83,8 @@ class OVSSwitch(OVSBridge):
 
             self.set_qos(port.port_name,"linux-htb",MAX_QOS_RATE)
             self._addDefaultQueue(port.port_name)
-            self.setupPool(port)
+            if datapath_id == DP:
+                self.setupPool(port)
 #            self.delQueue(port.ofport,[0])
 #            self.del_qos(port.port_name)
             #set default route at table_id:0, 
@@ -105,7 +109,7 @@ class OVSSwitch(OVSBridge):
         port.queuePool = {} #[queue-id] = port_dict
         port.queuePool.setdefault("free",[]) #store free queues ,id
         port.queuePool.setdefault("busy",[]) #store busy queues ,id
-        port.queueLevel = {} #[level] = {id:level,'chonfig':{"min-rate":int,"max-rate":"","priority":prio,}}
+        port.queueLevel = {} #[level] = {id:level,'config':{"min-rate":int,"max-rate":"","priority":prio,}}
         port.queueConfig = {} #queuconfig[queu_id] = bandwidth, is used when release queue
         port.used_bw = 0
         total = 0
@@ -136,6 +140,12 @@ class OVSSwitch(OVSBridge):
             
             return qid
         return None
+
+    "max badnwidth"
+    def getMaxBW(self,ofport):
+        port = self.ports[ofport]
+        return int(port.queueLevel[0]['config']['min-rate'])
+
 
     def getQueueWithBW(self,ofport,bw=None):
         port = self.ports[ofport]
@@ -173,10 +183,36 @@ class OVSSwitch(OVSBridge):
         LOG.info(port.used_bw)
         LOG.info(port.queuePool["free"])
         LOG.info(port.queuePool["busy"])
+#TODO : MORE WORK HERE
+    def getNextBW(self,ofport,rate):
+        port = self.ports[ofport]
+        for level,config in reversed(port.items()):
+            if config["min-rate"] > rate:
+                return config["min-rate"]
 
 
-            
-    
+
+
+    """adjust the speed of all busy queues at this port
+    """
+    def adjustBW(self,ofport):
+        port = self.ports[ofport]
+        for qid,bw in port.queueConfig.items(): #all occupied queues
+            duration,rate = self.getRate(ofport,qid)
+            LOG.info("duration = %s, rate = %d",duration,rate)
+            if duration >= TIME and rate < alpha*bw:
+                new_bw = self.getNextBW(ofport,rate)
+                
+                assert new_bw < bw
+                
+                "assuming that all config is set correctly"
+                self.setQueueConfig(ofport,qid,str(new_bw))
+                port.used_bw = port.used_bw - bw + new_bw  #adjust available bandwidth
+            else:
+                 pass
+                 #don't adjust
+
+        return port.video_bw - port.used_bw
     #update counter
     def updateCounter(self,ofport,queue_id,sec,nsec,tx_bytes,tx_packets=None):
         queues = self.pqRate[ofport]
@@ -207,7 +243,7 @@ class OVSSwitch(OVSBridge):
         """
         #TODO: more description about queue
         #And including priority
-        queue_descs = [ {"queue-id":0,"min-rate":"1","priority":"0"},{"queue-id":1,"min-rate":"1000000","priority":"100"}]
+        queue_descs = [ {"queue-id":0,"min-rate":"1","max-rate":MAX_QOS_RATE,"priority":"0"},{"queue-id":1,"max-rate":MAX_QOS_RATE,"min-rate":"1000000","priority":"100"}]
         self._setQueues(portName,queue_descs)
         for ofport,port in self.ports.items():
             if port.port_name == portName:

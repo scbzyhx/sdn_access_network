@@ -15,6 +15,7 @@ from ryu.controller import ofp_event
 from ryu.ofproto import ofproto_v1_3_parser as ofproto
 from ryu.lib.packet import ether_types as ether
 from ryu.controller.handler import MAIN_DISPATCHER
+from ryu.lib.packet import in_proto as inet
 
 from events import Req
 from events import Reply
@@ -23,9 +24,6 @@ from events import ReqHost #synchronized request
 
 import consts
 
-class InternalEvent(EventBase):
-    def __init__(self,*args,**kwargs):
-        pass
 
 def cmp_list(list1,list2):
     if len(list1) != len(list2):
@@ -34,6 +32,12 @@ def cmp_list(list1,list2):
         if el not in list2:
             return False
     return True
+#TODO: algorithm here
+#@request = {} , key is the index stands for item, value is bandwidth required 
+#@avail is total available bandwidth
+#@return is list of key, that is statisfied
+def knapsack(requests,avail):
+    return []
 
 class Policy(app_manager.RyuApp):
     _EVENTS = [Reply,ReqHost]
@@ -63,7 +67,7 @@ class Policy(app_manager.RyuApp):
         super(Policy,self).start()
         #self.threads.append(hub.spawn(self._event_loop))
         self.threads.append(hub.spawn(self.replyRequest))
-#self.logger.debug("hello world")
+    
     @set_ev_cls(ofp_event.EventOFPFlowRemoved,MAIN_DISPATCHER)
     def flow_removed_handler(self,ev):
         msg = ev.msg
@@ -100,7 +104,6 @@ class Policy(app_manager.RyuApp):
 
         with self.sem:
             self.requestQ.append(ev.req)
-#self.send_event_to_observers(Reply(ev.req,"success"))
 #TODO   
     def replyRequest(self):
         while self.is_active:
@@ -113,19 +116,100 @@ class Policy(app_manager.RyuApp):
                 with self.sem:
                     semTmp = self.requestQ
                     self.requestQ = []
-                    hub.sleep(0.1)
+#hub.sleep(0.1)
             else:
                 hub.sleep(0.1)
                 continue
+
+            DP = 4
+            sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
+            
+            sw.adjustBW()
+
+            self.logger.debug(req.flows)
+            hosttracker = app_manager.lookup_service_brick("HostTracker")
+            sw_mac_to_port = app_manager.lookup_service_brick("SimpleSwitch13")
+            
+            self.logger.debug(sw_mac_to_port.mac_to_port)
+            DP = 4
+            ofport = 2 #(s4 -eth2)
+            sw_mac_to_port = sw_mac_to_port.mac_to_port.get(DP,{}) #5 is datapath id
+
+            sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
+            
+            requests = {}
+            
+            for index, req in enumerate(semTmp):
+                bw = req.action[1]
+                if bw = 0:
+                    bw = sw.getMaxBW(ofport) #maxrate
+                requests[index] = req.action[1]
+
+            knapsack_set = knapsack(requests,avail) 
+        
+            for ind,req in enumerate(semTmp):
+     
+                if ind not in knapsack_set:
+                    self.send_event_to_observers(Reply(req,"failure"))
+                    continue
+                else:
+                    bw = req.action[1] #min bandwidth
+                    srcIP = 
+
+                    if bw == 0:#
+                        queue_id = sw.getQueueWithBW(ofport)
+                    else:
+                        queue_id = sw.getQueueWithBW(ofport,bw)
+
+                    datapath = self.dpset.get(DP)
+                    parser = datapath.ofproto_parser
+
+                    for flow in req.flows:
+                        srcIP  = flow['src']
+                        dstIP = flow['dst']
+                        srcPort = flow['src_port']
+                        dstPort = flow['dst_port']
+                        if flow['proto'].lower() == 'tcp':
+                            match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_TCP,ip_dscp=consts.PHB,tcp_src=srcPort,tcp_dst=dstPort)
+                        else:
+                            match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_UDP,ip_dscp=consts.PHB,udp_src=srcPort,udp_dst=dstPort)
+
+                        actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(ofport)]
+                        self.add_flow(datapath,10,match,actions)
+
+                        "update badnwdith"
+                        dicts = self.matches.get(datapath.id,{})
+                        dicts[match] = (ofport,queue_id)
+                        self.matches[datapath.id] = dicts
+                    
+
+                        port = self.queueref.get(datapath.id,{})
+                        self.queueref[datapath.id] = port
+                    
+                        queue = port.get(ofport,{})
+                        queue.setdefault(queue_id,[0,semaphore.Semaphore(1)])
+                        with queue[queue_id][1]:
+                            queue[queue_id][0] += 1
+                            port[ofport] = queue
+
+                    self.send_event_to_observers(Reply(req,"success"))
+
+
+                
+            """    
             for req in semTmp:
                 #for each request
                 self.logger.debug(req.action)
                 self.logger.debug(req.flows)
-                hosttracker = app_manager.lookup_service_brick("HostTracker")
-                sw_mac_to_port = app_manager.lookup_service_brick("SimpleSwitch13")
+
                 self.logger.debug(sw_mac_to_port.mac_to_port)
                 DP = 4
-                sw_mac_to_port = sw_mac_to_port.mac_to_port.get(DP,{}) #5 is datapath id 
+                sw_mac_to_port = sw_mac_to_port.mac_to_port.get(DP,{}) #5 is datapath id
+
+                sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
+
+
+
                 for flow in req.flows:
                     srcIP  = flow['src']
                     src = hosttracker.hosts.get(srcIP,None)
@@ -150,8 +234,7 @@ class Policy(app_manager.RyuApp):
                         "Nothging"
                         break
                     self.logger.debug("the port to dst is at %d",port_at_sw4)
-                    sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
-#queue_id = sw.getQueue(port_at_sw4)
+                    
                     bw = req.action[1] #min bandwidth
                     if bw == 0:#
                         queue_id = sw.getQueueWithBW(port_at_sw4)
@@ -162,7 +245,6 @@ class Policy(app_manager.RyuApp):
                     parser = datapath.ofproto_parser
                     match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_dscp=consts.PHB)
                     actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(port_at_sw4)]
-#self.logger.debug(match.to_jsondict())
                     self.add_flow(datapath,10,match,actions)
                     dicts = self.matches.get(datapath.id,{})
                     dicts[match] = (port_at_sw4,queue_id)
@@ -177,7 +259,7 @@ class Policy(app_manager.RyuApp):
                         queue[queue_id][0] += 1
                         port[port_at_sw4] = queue
                     
-                   
+                """   
 
                           
 
@@ -191,7 +273,7 @@ class Policy(app_manager.RyuApp):
                     """
 
 
-                self.send_event_to_observers(Reply(req))
+#                self.send_event_to_observers(Reply(req))
                  
                 """
                 1. get flow
@@ -202,7 +284,7 @@ class Policy(app_manager.RyuApp):
      
     """add to table 0
     """
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=10):
+    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=60):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 

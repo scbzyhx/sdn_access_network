@@ -4,18 +4,18 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-ACTION_PATTERN	RestRequestAPI.py	/^ACTION_PATTERN=""$/;"	v
 CONF	NIB.py	/^CONF = cfg.CONF$/;"	v
 CTRL_PORT	NIB.py	/^CTRL_PORT = "6622"$/;"	v
 CommandFailure	RestRequestAPI.py	/^class CommandFailure(RyuException):$/;"	c
 DEFAULT_QUEUE	consts.py	/^DEFAULT_QUEUE = 0$/;"	v
+DP	switch.py	/^DP = 4$/;"	v
 EF	consts.py	/^EF = 0x2e$/;"	v
-FLOW_PATTERN	RestRequestAPI.py	/^FLOW_PATTERN=""$/;"	v
 Filter	filtering.py	/^class Filter(app_manager.RyuApp):$/;"	c
-InteractiveServer	interactiveServer.py	/^class InteractiveServer(app_manager.RyuApp):$/;"	c
-InternalEvent	policy.py	/^class InternalEvent(EventBase):$/;"	c
+HostTracker	host_tracker.py	/^class HostTracker(app_manager.RyuApp):$/;"	c
 LOG	newvsctl.py	/^LOG = logging.getLogger(__name__)$/;"	v
 LOG	switch.py	/^LOG =logging.getLogger(__name__)$/;"	v
+MAXLEN	switch.py	/^MAXLEN = 500$/;"	v
+MAX_QOS_RATE	switch.py	/^MAX_QOS_RATE = "10000000"$/;"	v
 MAX_SUSPENDPACKETS	RestRequestAPI.py	/^MAX_SUSPENDPACKETS = 50  # Threshold of the packet suspends thread count.$/;"	v
 NIB	NIB.py	/^class NIB(app_manager.RyuApp):$/;"	c
 NewVSCtl	newvsctl.py	/^class NewVSCtl(VSCtl):$/;"	c
@@ -31,49 +31,51 @@ POLICY_ROUTING	consts.py	/^POLICY_ROUTING = ofproto.OFP_DEFAULT_PRIORITY$/;"	v
 POLICY_TABLE	consts.py	/^POLICY_TABLE = 0$/;"	v
 PRIORITY_QUEUE	consts.py	/^PRIORITY_QUEUE = 1$/;"	v
 Policy	policy.py	/^class Policy(app_manager.RyuApp):$/;"	c
-QPOOL	switch.py	/^QPOOL = [{"min-rate":"4000","num":6},{"min-rate":"2000","num":6},{"min-rate":"1000","num":6}]$/;"	v
+QPOOL	switch.py	/^QPOOL = [{"min-rate":"4000000","num":6},{"min-rate":"2000000","num":6},{"min-rate":"1000000","num":6}]$/;"	v
 REQ_TIMEOUT	RestRequestAPI.py	/^REQ_TIMEOUT = 5$/;"	v
 REST_ALL	RestRequestAPI.py	/^REST_ALL = 'failure'$/;"	v
 REST_DETAILS	RestRequestAPI.py	/^REST_DETAILS = 'default'$/;"	v
-REST_NG	RestRequestAPI.py	/^REST_NG = 'success'$/;"	v
+REST_NG	RestRequestAPI.py	/^REST_NG = 'not ok'$/;"	v
 REST_OK	RestRequestAPI.py	/^REST_OK = 'ok'$/;"	v
 REST_RESULT	RestRequestAPI.py	/^REST_RESULT = 'reult'$/;"	v
 ROUTING_PRIORITY	consts.py	/^ROUTING_PRIORITY = ofproto.OFP_DEFAULT_PRIORITY$/;"	v
 ROUTING_TABLE	consts.py	/^ROUTING_TABLE = 1$/;"	v
 Reply	events.py	/^class Reply(EventBase):$/;"	c
 Req	events.py	/^class Req(EventBase):$/;"	c
+ReqHost	events.py	/^class ReqHost(EventBase):$/;"	c
 ReqWrapper	events.py	/^class ReqWrapper(EventBase):$/;"	c
 RequestController	RestRequestAPI.py	/^class RequestController(ControllerBase):$/;"	c
 RespHandler	RestRequestAPI.py	/^    def RespHandler(self,ev):$/;"	m	class:RestRequestAPI
 RestRequestAPI	RestRequestAPI.py	/^class RestRequestAPI(app_manager.RyuApp):$/;"	c
 SWITCHID_PATTERN	RestRequestAPI.py	/^SWITCHID_PATTERN = dpid_lib.DPID_PATTERN + r'|all'$/;"	v
 SimpleSwitch13	simple_switch_13.py	/^class SimpleSwitch13(app_manager.RyuApp):$/;"	c
+TIME	switch.py	/^TIME = 30$/;"	v
 TOTAL_QUEUE	switch.py	/^TOTAL_QUEUE =  18$/;"	v
 Test	Test.py	/^class Test(app_manager.RyuApp):$/;"	c
 TestEvent	Test.py	/^class TestEvent(event.EventBase):$/;"	c
 UINT16_MAX	RestRequestAPI.py	/^UINT16_MAX = 0xffff$/;"	v
 UINT32_MAX	RestRequestAPI.py	/^UINT32_MAX = 0xffffffff$/;"	v
 UINT64_MAX	RestRequestAPI.py	/^UINT64_MAX = 0xffffffffffffffff$/;"	v
-USER_PATTERN	RestRequestAPI.py	/^USER_PATTERN=""$/;"	v
+VIDEO_BANDWIDTH	switch.py	/^VIDEO_BANDWIDTH = 8000000$/;"	v
 VLANID_PATTERN	RestRequestAPI.py	/^VLANID_PATTERN = r'[0-9]{1,4}|all'$/;"	v
 _CONTEXTS	RestRequestAPI.py	/^    _CONTEXTS = {'dpset': dpset.DPSet,$/;"	v	class:RestRequestAPI
 _EVENTS	RestRequestAPI.py	/^    _EVENTS = [Req]$/;"	v	class:RestRequestAPI
 _EVENTS	Test.py	/^    _EVENTS=[events.Reply,TestEvent]$/;"	v	class:Test
 _EVENTS	filtering.py	/^    _EVENTS = [Reply,ReqWrapper]$/;"	v	class:Filter
-_EVENTS	policy.py	/^    _EVENTS = [Reply]$/;"	v	class:Policy
+_EVENTS	policy.py	/^    _EVENTS = [Reply,ReqHost]$/;"	v	class:Policy
 _LOGGER	RestRequestAPI.py	/^    _LOGGER = None$/;"	v	class:RequestController
 __init__	NIB.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:NIB
 __init__	RestRequestAPI.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:RestRequestAPI
 __init__	RestRequestAPI.py	/^    def __init__(self,req,link,data,**config):$/;"	m	class:RequestController
 __init__	Test.py	/^    def __init__(self):$/;"	m	class:TestEvent
 __init__	Test.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:Test
+__init__	events.py	/^    def __init__(self,mac,ip=None):$/;"	m	class:ReqHost
 __init__	events.py	/^    def __init__(self,req):$/;"	m	class:ReqWrapper
 __init__	events.py	/^    def __init__(self,req,flow,action):$/;"	m	class:Req
 __init__	events.py	/^    def __init__(self,req,status = "success"):$/;"	m	class:Reply
 __init__	filtering.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:Filter
-__init__	interactiveServer.py	/^    def __init__(self,*args,**kargs):$/;"	m	class:InteractiveServer
+__init__	host_tracker.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:HostTracker
 __init__	newvsctl.py	/^    def __init__(self,remote):$/;"	m	class:NewVSCtl
-__init__	policy.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:InternalEvent
 __init__	policy.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:Policy
 __init__	simple_switch_13.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:SimpleSwitch13
 __init__	switch.py	/^    def __init__(self,CONF,datapath_id,ovsdb_addr,timeout=None,exception=None):$/;"	m	class:OVSSwitch
@@ -95,28 +97,48 @@ _setQueueConfig	switch.py	/^    def _setQueueConfig(self,ofport,queues):$/;"	m	c
 _setQueues	switch.py	/^    def _setQueues(self,portName,queues):$/;"	m	class:OVSSwitch
 addQueue	NIB.py	/^    def addQueue(self,datapathID,port_no,queues_desc):$/;"	m	class:NIB
 addSwitch	NIB.py	/^    def addSwitch(self,datapathID,ovswitch):$/;"	m	class:NIB
-add_flow	simple_switch_13.py	/^    def add_flow(self, datapath, priority, match, actions, buffer_id=None):$/;"	m	class:SimpleSwitch13
+add_flow	policy.py	/^    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=60):$/;"	m	class:Policy
+add_flow	simple_switch_13.py	/^    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=5):$/;"	m	class:SimpleSwitch13
+adjustBW	switch.py	/^    def adjustBW(self,ofport):$/;"	m	class:OVSSwitch
+alpha	switch.py	/^alpha = 0.5$/;"	v
+cal_rate	switch.py	/^def cal_rate(deq):$/;"	f
+cmp_list	policy.py	/^def cmp_list(list1,list2):$/;"	f
 delQueue	NIB.py	/^    def delQueue(self,datapathID,port_no,queueID):$/;"	m	class:NIB
 delQueue	switch.py	/^    def delQueue(self,ofport,queues):$/;"	m	class:OVSSwitch
 delSwitch	NIB.py	/^    def delSwitch(self,datapathID):$/;"	m	class:NIB
 dpStateEventHandler	NIB.py	/^    def dpStateEventHandler(self,ev):$/;"	m	class:NIB
+expireHostEntries	host_tracker.py	/^    def expireHostEntries(self):$/;"	m	class:HostTracker
+flow_removed_handler	policy.py	/^    def flow_removed_handler(self,ev):$/;"	m	class:Policy
+getMaxBW	switch.py	/^    def getMaxBW(self,ofport):$/;"	m	class:OVSSwitch
+getNextBW	switch.py	/^    def getNextBW(self,ofport,rate):$/;"	m	class:OVSSwitch
 getPort	switch.py	/^    def getPort(self,portNo):$/;"	m	class:OVSSwitch
 getQueue	switch.py	/^    def getQueue(self,ofport):$/;"	m	class:OVSSwitch
+getQueueWithBW	switch.py	/^    def getQueueWithBW(self,ofport,bw=None):$/;"	m	class:OVSSwitch
+getRate	switch.py	/^    def getRate(self,ofport,queue_id):$/;"	m	class:OVSSwitch
 getSwitch	NIB.py	/^    def getSwitch(self,datapathID):$/;"	m	class:NIB
 handler	filtering.py	/^    def handler(self,ev):$/;"	m	class:Filter
+isRouter	host_tracker.py	/^    def isRouter(self, mac):$/;"	m	class:HostTracker
+knapsack	policy.py	/^def knapsack(requests,avail):$/;"	f
 overrider	newvsctl.py	/^    def overrider(method):$/;"	f	function:overrides
 overrides	newvsctl.py	/^def overrides(interface_class):$/;"	f
+packet_in_handler	host_tracker.py	/^    def packet_in_handler(self, ev):$/;"	m	class:HostTracker
+queue_stats_request	NIB.py	/^    def queue_stats_request(self):$/;"	m	class:NIB
+releaseQueue	switch.py	/^    def releaseQueue(self,ofport,queue_id):$/;"	m	class:OVSSwitch
 replyRequest	policy.py	/^    def replyRequest(self):$/;"	m	class:Policy
 req_bw	RestRequestAPI.py	/^    def req_bw(self,req,**_kwargs):$/;"	m	class:RequestController
 requestHandler	policy.py	/^    def requestHandler(self,ev):$/;"	m	class:Policy
 rest_command	RestRequestAPI.py	/^def rest_command(func):$/;"	f
 run_command	switch.py	/^    def run_command(self, commands):$/;"	m	class:OVSSwitch
 sendEvent	RestRequestAPI.py	/^    def sendEvent(self,req):$/;"	m	class:RestRequestAPI
-setQueueConfig	switch.py	/^    def setQueueConfig(self,ofport,queue_id=None, min_rate=None,max_rate=None,priority=2):$/;"	m	class:OVSSwitch
+setQueueConfig	switch.py	/^    def setQueueConfig(self,ofport,queue_id=None, min_rate=MAX_QOS_RATE,max_rate=None,priority=2):$/;"	m	class:OVSSwitch
 setQueues	switch.py	/^    def setQueues(self,ofport,queues):$/;"	m	class:OVSSwitch
 set_logger	RestRequestAPI.py	/^    def set_logger(cls,logger):$/;"	m	class:RequestController
 setupPool	switch.py	/^    def setupPool(self,port):$/;"	m	class:OVSSwitch
+start	NIB.py	/^    def start(self):$/;"	m	class:NIB
 start	policy.py	/^    def start(self):$/;"	m	class:Policy
+stats_handler	NIB.py	/^    def stats_handler(self,ev):$/;"	m	class:NIB
 switch_features_handler	simple_switch_13.py	/^    def switch_features_handler(self, ev):$/;"	m	class:SimpleSwitch13
 testDeletePort	switch.py	/^    def testDeletePort(self,br_name):$/;"	m	class:OVSSwitch
 testEventHandler	Test.py	/^    def testEventHandler(self,ev):$/;"	m	class:Test
+updateCounter	switch.py	/^    def updateCounter(self,ofport,queue_id,sec,nsec,tx_bytes,tx_packets=None):$/;"	m	class:OVSSwitch
+updateHostTable	host_tracker.py	/^    def updateHostTable(self, srcIP, dpid, port):$/;"	m	class:HostTracker

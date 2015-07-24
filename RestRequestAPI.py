@@ -140,6 +140,9 @@ class RestRequestAPI(app_manager.RyuApp):
     def RespHandler(self,ev):
         self.logger.debug("GOT reply")
         ev.req.evt.set()
+        ev.req.status = ev.status
+
+
     def sendEvent(self,req):
         """
             send request to check module or policy module 
@@ -207,8 +210,8 @@ class RequestController(ControllerBase):
             tmpReq.evt = evt
             self.app.sendEvent(tmpReq)
             if evt.wait(REQ_TIMEOUT) == True:
-                self._LOGGER.info("Request SUCCESS")
-                return {REST_RESULT:REST_OK,REST_DETAILS:"request sucess!"}
+                self._LOGGER.info("Request Replied")
+                return {REST_RESULT:REST_OK,REST_DETAILS:tmpReq.status}
             else:
                 self._LOGGER.info("Request TIMEOUT")
                 return {REST_RESULT:REST_NG,REST_DETAILS:'timeout'}
