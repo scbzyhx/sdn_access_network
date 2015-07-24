@@ -18,12 +18,13 @@ import logging
 import numbers
 import socket
 import struct
+import ast
 
 import json
 from webob import Response
 
 from ryu.app.wsgi import ControllerBase
-from ryu.app.wsgi import WSGIApplication
+from ryu.app.wsgi import WSGIApplication,route
 from ryu.base import app_manager
 from ryu.controller import dpset
 from ryu.controller import ofp_event
@@ -48,6 +49,7 @@ from filtering  import Filter
 from policy import Policy
 from NIB import NIB
 from simple_switch_13 import SimpleSwitch13
+from host_tracker import HostTracker
 # =============================
 #          REST API
 # =============================
@@ -75,16 +77,13 @@ MAX_SUSPENDPACKETS = 50  # Threshold of the packet suspends thread count.
 REST_RESULT = 'reult'
 REST_DETAILS = 'default'
 REST_OK = 'ok'
-REST_NG = 'success'
+REST_NG = 'not ok'
 REST_ALL = 'failure'
 
 
 SWITCHID_PATTERN = dpid_lib.DPID_PATTERN + r'|all'
 VLANID_PATTERN = r'[0-9]{1,4}|all'
 
-USER_PATTERN=""
-FLOW_PATTERN=""
-ACTION_PATTERN=""
 
 REQ_TIMEOUT = 5
 
@@ -109,7 +108,8 @@ class RestRequestAPI(app_manager.RyuApp):
                  'policy':Policy,
                  'nib':NIB,
                  'dpset':DPSet,
-                 'simpleswitch13':SimpleSwitch13
+                 'simpleswitch13':SimpleSwitch13,
+                 'host_tracker':HostTracker
 #'check':Check
                 }
     _EVENTS = [Req]
@@ -121,6 +121,7 @@ class RestRequestAPI(app_manager.RyuApp):
             self.logger.setLevel(logging.DEBUG)
 #DEBUG
         self.logger.setLevel(logging.DEBUG)
+        print kwargs
 #
         wsgi = kwargs['wsgi']
         self.requests = {}
@@ -128,15 +129,12 @@ class RestRequestAPI(app_manager.RyuApp):
 
         mapper = wsgi.mapper
         wsgi.registory['RequestController'] = self.data
-        requirements = {'user': USER_PATTERN,
-                        'flow': FLOW_PATTERN,
-                        'action':ACTION_PATTERN}
         
         path = '/request/bandwidth'
-        mapper.connect('request',path,controller=RequestController,
-                       requirement=requirements,
+        mapper.connect(None,path,controller=RequestController,
+                       requirement=None,
                        action='req_bw',
-                       conditions=dict(method=['GET']))
+                       conditions=dict(method=['POST']))
 #TODO
     @set_ev_cls(events.Reply)
     def RespHandler(self,ev):
@@ -150,11 +148,6 @@ class RestRequestAPI(app_manager.RyuApp):
         self.send_event_to_observers(req)
 
 
-#       path = '/router/{switch_id}'
-#       mapper.connect('router', path, controller=RouterController,
-#                      requirements=requirements,
-#                      action='get_data',
-#                      conditions=dict(method=['GET']))
 
 
 # REST command template
@@ -199,6 +192,7 @@ class RequestController(ControllerBase):
         fmt_str = '[RT][%(levelname)s] Request: %(message)s'
         hdlr.setFormatter(logging.Formatter(fmt_str))
         cls._LOGGER.addHandler(hdlr)
+#@route("request","/request/bandwidth",methods=["POST"])
     @rest_command
     def req_bw(self,req,**_kwargs):
         """1. add something to self.reqs in addtion to and hub.Event()
@@ -206,28 +200,17 @@ class RequestController(ControllerBase):
            3. event.wait() 
         """
         self.reqs[req.client_addr] = _kwargs
-        tmpReq = Req(req,2,3)
-        evt = hub.Event()
-        tmpReq.evt = evt
-        self.app.sendEvent(tmpReq)
-        #TODO
-        try:
-            evt.wait(REQ_TIMEOUT)
-            self._LOGGER.info("Request SUCCESS")
-            return {REST_RESULT:REST_OK,REST_DETAILS:"request sucess!"}
-        except hub.Timeout as timeout:
-            self._LOGGER.info("Request TIMEOUT")
-            return {REST_RESULT:REST_NG,REST_DETAILS:timeout}
-
-
-#lass RouterController(ControllerBase):
-
-#   _ROUTER_LIST = {}
-#   _LOGGER = None
-#   # GET /router/{switch_id}
-#   @rest_command
-#   def get_data(self, req, switch_id, **_kwargs):
-#       return self._access_router(switch_id, VLANID_NONE,
-#                                  'get_data', req.body)
+        for realreq in req.POST.keys():
+            reqdict = ast.literal_eval(realreq)
+            tmpReq = Req(req,reqdict['flows'],reqdict["action"])
+            evt = hub.Event()
+            tmpReq.evt = evt
+            self.app.sendEvent(tmpReq)
+            if evt.wait(REQ_TIMEOUT) == True:
+                self._LOGGER.info("Request SUCCESS")
+                return {REST_RESULT:REST_OK,REST_DETAILS:"request sucess!"}
+            else:
+                self._LOGGER.info("Request TIMEOUT")
+                return {REST_RESULT:REST_NG,REST_DETAILS:'timeout'}
 
 

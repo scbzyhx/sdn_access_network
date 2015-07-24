@@ -13,7 +13,7 @@ from ryu.ofproto.ofproto_v1_3_parser import OFPMatch
 class Req(EventBase):
     def __init__(self,req,flow,action):
         self.req = req
-        self.flow = flow
+        self.flows = flow
         self.action = action
 
 #
@@ -30,6 +30,11 @@ class Reply(EventBase):
 class ReqWrapper(EventBase):
     def __init__(self,req):
         self.req = req
+
+class ReqHost(EventBase):
+    def __init__(self,mac,ip=None):
+        self.mac = mac
+        self.ip = ip
 
 if __name__ == "__main__":
     "test"

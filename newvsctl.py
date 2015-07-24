@@ -211,18 +211,19 @@ class NewVSCtl(VSCtl):
 #queue_ids = command.args[1]
         configs = command.args[0] #each config including port_name and queue_id
         for config in configs:
-            queue_id = config.getdefault("queue-id",None)
-            port_name = config.getdefault("port_name",None)
-            priority = config.getdefault("priority",None)
-            max_rate = config.getdefault("max-rate",None)
-            min_rate = config.getdefault("min-rate",None)
+            queue_id = config.get("queue-id",None)
+            port_name = config.get("port_name",None)
+            priority = config.get("priority",None)
+            max_rate = config.get("max-rate",None)
+            min_rate = config.get("min-rate",None)
             
             assert port_name is not None
             assert queue_id is not None
             vsctl_port = ctx.find_port(port_name,True)
             vsctl_qos = vsctl_port.qos
 
-            assert len(vsctl_port.qos) != 0 
+            assert vsctl_port.qos is not None
+            assert len(vsctl_port.qos.qos_cfg) != 0
             ovsrec_qos = vsctl_qos.qos_cfg[0]
             
             ovsrec_queues = self._get_queues(ovsrec_qos,[queue_id])
@@ -237,8 +238,9 @@ class NewVSCtl(VSCtl):
                 value["min-rate"] = min_rate
             if priority is not None:
                 value["priority"] = priority
-            setattr(ovsrec_queue,vswitch_idl,OVSREC_QUEUE_COL_OTHER_CONFIG)
+            setattr(ovsrec_queue,vswitch_idl.OVSREC_QUEUE_COL_OTHER_CONFIG,value)
             self._notify_change(ovsrec_queue)
             LOG.debug("set attributes queue = %d",queue_id)
+            LOG.debug(value)
 
 

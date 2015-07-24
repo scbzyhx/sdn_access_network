@@ -23,6 +23,7 @@ class Filter(app_manager.RyuApp):
     
     def __init__(self,*args,**kwargs):
         super(Filter,self).__init__(*args,**kwargs)
+        self.name = self.__class__
 
         self.logger.setLevel(logging.DEBUG)
         self.logger.debug("initializing check module")
@@ -33,6 +34,7 @@ class Filter(app_manager.RyuApp):
         if success, then send to policy modules
         if illeage, send deny reply
         """
+        self.logger.debug("filtering handler")
         self.send_event_to_observers(ReqWrapper(ev))
         
     

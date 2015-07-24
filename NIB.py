@@ -10,6 +10,8 @@ from ryu.controller import ofp_event
 from ryu.controller.dpset import EventPortAdd
 from ryu import cfg
 from ryu.ofproto import ofproto_v1_3
+from ryu.lib import hub
+from ryu.lib import ofctl_v1_3 as ofctl
 
 import consts
 '''
@@ -32,6 +34,8 @@ class NIB(app_manager.RyuApp):
     def __init__(self,*args,**kwargs):
         super(NIB,self).__init__(args,kwargs)
         self.dps = {}
+        self.waiters = {}
+        self.datapaths = {}
         self.logger.setLevel(logging.DEBUG)
 
     def addSwitch(self,datapathID,ovswitch):
@@ -44,6 +48,12 @@ class NIB(app_manager.RyuApp):
     #return None or OVSwitch
     def getSwitch(self,datapathID):
         return self.dps.get(datapathID)
+
+    def start(self):
+        super(NIB,self).start()
+        self.logger.debug("start here ing")
+        self.threads.append(hub.spawn(self.queue_stats_request))
+
 
     #@queues are a list of dict,
     #each dict contains two keys: "min-rate" and "max-rate", the value are strings too
@@ -66,7 +76,9 @@ class NIB(app_manager.RyuApp):
     def dpStateEventHandler(self,ev):
         datapath = ev.datapath
         self.logger.debug("datpath type is %s",type(datapath))
-
+#print dir(datapath)
+#        print datapath.ofproto
+#        print dir(datapath.ofproto)
         parser = datapath.ofproto_parser
 
         remoteIP = "tcp:"+datapath.socket.getpeername()[0] + ":" + CTRL_PORT
@@ -75,6 +87,7 @@ class NIB(app_manager.RyuApp):
             if not datapath.id in self.dps:
                 self.logger.debug("register datapath: %016x",datapath.id)
                 self.dps[datapath.id] = OVSSwitch(CONF=CONF,datapath_id=datapath.id,ovsdb_addr=remoteIP)
+                self.datapaths[datapath.id] = datapath
 
                 #add a flow, make flow to routing table (table id is 1)
                 inst = [parser.OFPInstructionGotoTable(consts.ROUTING_TABLE)]
@@ -91,8 +104,33 @@ class NIB(app_manager.RyuApp):
             else:
                 self.logger.warn("unregister unconnected-datapath:%016x",ev.datapath.id)
     #
+    @set_ev_cls(ofp_event.EventOFPQueueStatsReply,MAIN_DISPATCHER)
+    def stats_handler(self,ev):
+        stats_reply = ev.msg #an OFPQueueStatsReply object
+        dpid = stats_reply.datapath.id
+        xid = stats_reply.xid
+        
+        waiters = self.waiters.get(dpid,None)
+        if waiters is None:
+            return
+        if waiters.has_key(xid):
+            waiters[xid][1].append(stats_reply)
+            waiters[xid][0].set()
+        
 
-
+    def queue_stats_request(self):
+        self.logger.debug("queeu_stats_requests")
+        print "print queue_stats"
+        while True:
+            hub.sleep(1)
+            "ofctl.get_queue_stats()"
+#self.logger.debug("ofctl start")
+            for dp in self.dps.keys():
+                stats = ofctl.get_queue_stats(self.datapaths[dp],self.waiters)[str(self.datapaths[dp].id)]
+                sw = self.dps[dp]
+                for st in stats:
+                    sw.updateCounter(st["port_no"],st["queue_id"],st["duration_sec"],st["duration_nsec"],st["tx_bytes"],st["tx_packets"])
+                    
 
 
 
