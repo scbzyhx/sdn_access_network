@@ -34,7 +34,8 @@ class SimpleSwitch13(app_manager.RyuApp):
         super(SimpleSwitch13, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
 
-        self.logger.setLevel(logging.DEBUG)
+        if self.CONF.enable_debugger:
+            self.logger.setLevel(logging.DEBUG)
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):

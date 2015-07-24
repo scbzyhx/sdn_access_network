@@ -45,7 +45,10 @@ class Policy(app_manager.RyuApp):
         fmt_str = '[RT][%(levelname)s] IN [%(funcName)s]: %(message)s'
         hdlr.setFormatter(logging.Formatter(fmt_str))
         self.logger.addHandler(hdlr)
-        self.logger.setLevel(logging.DEBUG)
+        
+        if self.CONF.enable_debugger:
+            self.logger.setLevel(logging.DEBUG)
+
 
         self.nib = app_manager.lookup_service_brick("NIB")
         self.dpset = app_manager.lookup_service_brick("dpset")

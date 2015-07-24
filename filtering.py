@@ -24,8 +24,9 @@ class Filter(app_manager.RyuApp):
     def __init__(self,*args,**kwargs):
         super(Filter,self).__init__(*args,**kwargs)
         self.name = self.__class__
+        if self.CONF.enable_debugger:
+            self.logger.setLevel(logging.DEBUG)
 
-        self.logger.setLevel(logging.DEBUG)
         self.logger.debug("initializing check module")
 #TODO       
     @handler.set_ev_cls(Req)

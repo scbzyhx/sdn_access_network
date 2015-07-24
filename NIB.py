@@ -36,7 +36,9 @@ class NIB(app_manager.RyuApp):
         self.dps = {}
         self.waiters = {}
         self.datapaths = {}
-        self.logger.setLevel(logging.DEBUG)
+        
+        if self.CONF.enable_debugger:
+            self.logger.setLevel(logging.DEBUG)
 
     def addSwitch(self,datapathID,ovswitch):
         self.dps.setdefault(datapathID,None)

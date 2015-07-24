@@ -40,6 +40,8 @@ class HostTracker(app_manager.RyuApp):
         self.routers = []
         self.IDLE_TIMEOUT = 300
 
+        if self.CONF.enable_debugger:
+            self.logger.setLevel(logging.DEBUG)
         Timer(self.IDLE_TIMEOUT, self.expireHostEntries).start()
 
     def expireHostEntries(self):
