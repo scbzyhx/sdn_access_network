@@ -57,7 +57,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         #priority 0 means lowest priority
         self.add_flow(datapath, 0, match, actions,None,0)
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=5):
+    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=30):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 

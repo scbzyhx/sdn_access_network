@@ -119,7 +119,7 @@ class OVSSwitch(OVSBridge):
             port.queueLevel[i] = config #{min-rate,and number}
             total = total + config["num"]
 
-        queue_config = [copy.copy({"min-rate":"1","max-rate":"10000000","priority":2}) for i in xrange(total)]
+        queue_config = [copy.copy({"min-rate":"1","max-rate":"10000000","priority":"2"}) for i in xrange(total)]
         self.setQueues(port.ofport,queue_config)
         for queue in queue_config:
             LOG.debug(queue)
@@ -131,6 +131,7 @@ class OVSSwitch(OVSBridge):
         """get a queue id at this port
         """
         port = self.ports[ofport]
+        LOG.debug("queuePool free = %s",port.queuePool["free"])
 
         for qid in port.queuePool["free"]:
             port.queuePool["free"].remove(qid)
@@ -183,10 +184,16 @@ class OVSSwitch(OVSBridge):
         LOG.info(port.used_bw)
         LOG.info(port.queuePool["free"])
         LOG.info(port.queuePool["busy"])
+
+    def getAvailBW(self,ofport):
+        port = self.ports.get(ofport,None)
+        if port is None:
+            return 0
+        return (port.video_bw - port.used_bw)
 #TODO : MORE WORK HERE
     def getNextBW(self,ofport,rate):
         port = self.ports[ofport]
-        for level,config in reversed(port.items()):
+        for level,config in reversed(port.queueLevel.items()):
             if config["min-rate"] > rate:
                 return config["min-rate"]
 
@@ -204,6 +211,8 @@ class OVSSwitch(OVSBridge):
                 new_bw = self.getNextBW(ofport,rate)
                 
                 assert new_bw < bw
+
+                LOG.debug("new bw = %d",new_bw)
                 
                 "assuming that all config is set correctly"
                 self.setQueueConfig(ofport,qid,str(new_bw))
@@ -216,9 +225,9 @@ class OVSSwitch(OVSBridge):
     #update counter
     def updateCounter(self,ofport,queue_id,sec,nsec,tx_bytes,tx_packets=None):
         queues = self.pqRate[ofport]
-        LOG.debug("ofport=%d,queue-id=%d,sec=%d,nsec=%d,tx_bytes=%d",ofport,queue_id,sec,nsec,tx_bytes)
+#LOG.debug("ofport=%d,queue-id=%d,sec=%d,nsec=%d,tx_bytes=%d",ofport,queue_id,sec,nsec,tx_bytes)
         if queue_id not in queues.keys():
-            LOG.debug("not recorded")
+#LOG.debug("not recorded")
             return
         queues[queue_id].append((sec,nsec,tx_bytes,tx_packets))
 

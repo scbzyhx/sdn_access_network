@@ -74,8 +74,8 @@ UINT64_MAX = 0xffffffffffffffff
 
 MAX_SUSPENDPACKETS = 50  # Threshold of the packet suspends thread count.
 
-REST_RESULT = 'reult'
-REST_DETAILS = 'default'
+REST_RESULT = 'result'
+REST_DETAILS = 'details'
 REST_OK = 'ok'
 REST_NG = 'not ok'
 REST_ALL = 'failure'
