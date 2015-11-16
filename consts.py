@@ -13,3 +13,6 @@ PRIORITY_QUEUE = 1
 
 EF = 0x2e
 PHB = 0x0e
+
+GW_DP = 4
+KEY_PORT = 2

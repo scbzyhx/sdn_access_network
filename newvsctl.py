@@ -4,7 +4,7 @@ from ryu.lib.ovs.vsctl import VSCtl,VSCtlContext,VSCtlQueue
 from ryu.lib.ovs import vswitch_idl
 
 LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.DEBUG)
+LOG.setLevel(logging.INFO)
 
 def overrides(interface_class):
     def overrider(method):

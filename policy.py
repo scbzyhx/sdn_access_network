@@ -179,7 +179,7 @@ class Policy(app_manager.RyuApp):
         while self.is_active:
             #do something
             semTmp = None
-#            self.logger.debug("in reply thread")
+            #self.logger.debug("in reply thread")
             #speed up
             hub.sleep(0.01)
             if len(self.requestQ) != 0:
@@ -187,18 +187,16 @@ class Policy(app_manager.RyuApp):
                 with self.sem:
                     semTmp = self.requestQ
                     self.requestQ = []
-#hub.sleep(0.1)
             else:
-#                hub.sleep(0.01)
                 continue
             start = time.clock()
 
-            DP = 4
-            ofport = 2 #(s4 -eth2)
+            DP = consts.GW_DP                        #4
+            ofport = consts.KEY_PORT                 #2 #(s4 -eth2)
             sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
             
 
-#            self.logger.debug(req.flows)
+            #self.logger.debug(req.flows)
             hosttracker = app_manager.lookup_service_brick("HostTracker")
             sw_mac_to_port = app_manager.lookup_service_brick("SimpleSwitch13")
             
@@ -213,7 +211,9 @@ class Policy(app_manager.RyuApp):
                 requests[index] = req.action[1]
             
             avail = sw.getAvailBW(ofport)
+            self.logger.debug("available bandwidth:%d",avail)
             knapsack_set,total_bw = knapsack(requests,avail) 
+            self.logger.debug("knapsack_set = %s",knapsack_set)
             for ind,req in enumerate(semTmp):
      
                 if ind not in knapsack_set:
@@ -237,6 +237,7 @@ class Policy(app_manager.RyuApp):
                         dstPort = flow.get('dst_port',None) #option
                         ip_proto = flow.get('proto',None)
                         if srcIP is None or dstIP is None  or ip_proto is None or queue_id is None:
+                            self.logger.info("faileure srcIP=%s,dstIP=%s,ip_proto=%s,queue_id=%d"%(srcIP,dstIP,ip_proto,queue_id))
                             self.send_event_to_observers(Reply(req,"failure"))
                             break
 
@@ -253,8 +254,6 @@ class Policy(app_manager.RyuApp):
                             if dstPort is not None:
                                 match.set_udp_dst(dstPort)
 
-                        print "ofprot=",ofport
-                        print "queue_id=",queue_id
 
                         actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(ofport)]
                         self.add_flow(datapath,10,match,actions)
@@ -372,7 +371,7 @@ class Policy(app_manager.RyuApp):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        self.logger.debug("add-flow-policy %s",match)
+        self.logger.info("add-flow-policy %s",match)
 
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                              actions)]
@@ -391,5 +390,4 @@ class Policy(app_manager.RyuApp):
 
 
             #self.send_event_to_observers(Reply())
-
 

@@ -122,7 +122,8 @@ class NIB(app_manager.RyuApp):
 
     def queue_stats_request(self):
         self.logger.debug("queeu_stats_requests")
-        print "print queue_stats"
+        self.logger.debug("print queue_stats")
+
         while True:
             hub.sleep(1)
             "ofctl.get_queue_stats()"

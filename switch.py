@@ -7,7 +7,7 @@ from ryu.lib.ovs.bridge import OVSBridge
 from ryu.lib.ovs import vsctl
 
 from newvsctl import NewVSCtl
-LOG =logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 #LOG.setLevel(logging.DEBUG)
 
 
@@ -21,8 +21,8 @@ TIME = 30
 alpha = 0.5
 
 MAXLEN = 500
-MAX_QOS_RATE = "10000000"
-VIDEO_BANDWIDTH = 8000000
+MAX_QOS_RATE = "50000000"
+VIDEO_BANDWIDTH = 40000000
 #deq is deque maxlen is MAXLEN
 #each element is (sec,nsec,tx_bytes,tx_packets)
 """nanoseconds is ignored
@@ -49,7 +49,9 @@ def cal_rate(deq):
             start_bytes = tx_bytes
             if end - sec > TIME:
                 break
-    return (end-start,float(end_bytes-start_bytes)/float(end-start))
+    BYTE_TO_BIT = 8
+
+    return (end-start,BYTE_TO_BIT * float(end_bytes-start_bytes)/float(end-start))
 
 
 
@@ -145,15 +147,15 @@ class OVSSwitch(OVSBridge):
     "max badnwidth"
     def getMaxBW(self,ofport):
         port = self.ports[ofport]
-        return int(port.queueLevel[0]['config']['min-rate'])
+        return int(port.queueLevel[0]['min-rate'])
 
 
     def getQueueWithBW(self,ofport,bw=None):
         port = self.ports[ofport]
         if bw is None:
-            bw = int(port.queueLevel[0]['config']['min-rate']) #maximum bandwidth
+            bw = int(port.queueLevel[0]['min-rate']) #maximum bandwidth
         "assuming that bw is just legal"
-        if port.used_bw + bw < port.video_bw:
+        if port.used_bw + bw <= port.video_bw:
             queue_id = self.getQueue(ofport)
             if queue_id is None:
                 return None
@@ -206,17 +208,22 @@ class OVSSwitch(OVSBridge):
         port = self.ports[ofport]
         for qid,bw in port.queueConfig.items(): #all occupied queues
             duration,rate = self.getRate(ofport,qid)
-            LOG.info("duration = %s, rate = %d",duration,rate)
+            if rate is None:
+                LOG.debug("rate is None, I don't know why")
+                return
+            LOG.info("duration = %s, rate = %d, alloc_bandwidth=%s",duration,rate,bw)
             if duration >= TIME and rate < alpha*bw:
                 new_bw = self.getNextBW(ofport,rate)
                 
-                assert new_bw < bw
+                LOG.info("new bw = %s",new_bw)
+                assert int(new_bw) <= int(bw)
 
-                LOG.debug("new bw = %d",new_bw)
                 
                 "assuming that all config is set correctly"
                 self.setQueueConfig(ofport,qid,str(new_bw))
-                port.used_bw = port.used_bw - bw + new_bw  #adjust available bandwidth
+                #update bandwidth
+                port.queueConfig[qid] = str(new_bw)
+                port.used_bw = port.used_bw - int(bw) + int(new_bw)  #adjust available bandwidth
             else:
                  pass
                  #don't adjust
@@ -230,6 +237,7 @@ class OVSSwitch(OVSBridge):
 #LOG.debug("not recorded")
             return
         queues[queue_id].append((sec,nsec,tx_bytes,tx_packets))
+        LOG.debug("queue_id=%d,desc=%d",queue_id,tx_bytes)
 
     def getRate(self,ofport,queue_id):
         try:

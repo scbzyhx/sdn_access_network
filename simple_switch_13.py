@@ -23,16 +23,20 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types as ether
+from ryu.lib.packet import in_proto as inet
+from ryu.lib.packet import udp, tcp
 
-
+from events import MarkReversedEvent
 import consts
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
-
+    _EVENTS = [MarkReversedEvent]
     def __init__(self, *args, **kwargs):
         super(SimpleSwitch13, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
+
+        self.dpset = app_manager.lookup_service_brick("dpset")
 
         if self.CONF.enable_debugger:
             self.logger.setLevel(logging.DEBUG)
@@ -57,7 +61,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         #priority 0 means lowest priority
         self.add_flow(datapath, 0, match, actions,None,0)
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=30):
+    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=30,table_id=consts.ROUTING_TABLE):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -69,11 +73,11 @@ class SimpleSwitch13(app_manager.RyuApp):
         """add paramter table_id=consts.ROUTIN_TABLE to OFPFlowMod
         """
         if buffer_id:
-            mod = parser.OFPFlowMod(datapath=datapath, table_id=consts.ROUTING_TABLE,idle_timeout=idle_timeout,buffer_id=buffer_id,
+            mod = parser.OFPFlowMod(datapath=datapath, table_id=table_id,idle_timeout=idle_timeout,buffer_id=buffer_id,
                                     priority=priority, match=match,
                                     instructions=inst)
         else:
-            mod = parser.OFPFlowMod(datapath=datapath, table_id=consts.ROUTING_TABLE,idle_timeout=idle_timeout,priority=priority,
+            mod = parser.OFPFlowMod(datapath=datapath, table_id=table_id,idle_timeout=idle_timeout,priority=priority,
                                     match=match, instructions=inst)
         datapath.send_msg(mod)
 
@@ -100,7 +104,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s, %x", dpid, src, dst, in_port,eth.ethertype)
+        self.logger.debug("packet in %s %s %s %s, %x", dpid, src, dst, in_port,eth.ethertype)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
@@ -109,38 +113,77 @@ class SimpleSwitch13(app_manager.RyuApp):
             out_port = self.mac_to_port[dpid][dst]
         else:
             out_port = ofproto.OFPP_FLOOD
-        
+
+        kwargs = {'in_port':in_port,
+                  'eth_dst':dst,
+                  'eth_type':dl_type
+                 }
         """action: Enqueue
         """
         outqueue = parser.OFPActionSetQueue(consts.DEFAULT_QUEUE)
         priority = 5
-        dscp = 0
         for p in pkt.protocols:
-#self.logger.debug(p)
             if type(p) == type(""):
                 continue
             if p.protocol_name == "ipv4":
+                  
                 if  (p.tos >> 2 ) == consts.EF:
+                    """
+                    prepare exactly match
+                    """
+                    self.logger.debug("type of p is %s", type(p))
                     self.logger.debug("p.tos eq 0x2e here")
                     outqueue = parser.OFPActionSetQueue(consts.PRIORITY_QUEUE)
+
                     priority = 10
                     dscp = p.tos >> 2
-                    self.logger.debug(p)
+                    #test
+                    #dscp  = consts.EF
+                    kwargs['ip_proto'] = p.proto
+                    kwargs['ip_dscp'] = consts.EF
+                    kwargs['ipv4_src'] = p.src
+                    kwargs['ipv4_dst'] = p.dst
+                    #match = parser.OFPMatch(in_port=in_port,eth_dst=dst,eth_type=dl_type,ip_proto=p.proto,ip_dscp=consts.EF,ipv4_src=p.src,ipv4_dst=p.dst)
+                    sport = None
+                    dport = None
+                    tpkt = None
+
+                    if p.proto == inet.IPPROTO_TCP:
+                        tpkt = pkt.get_protocol(tcp.tcp)
+                    elif p.proto == inet.IPPROTO_UDP:
+                        tpkt = pkt.get_protocol(udp.udp)
+
+                    if tpkt is not None:
+                        sport = tpkt.src_port
+                        dport = tpkt.dst_port
+
+
+                    self._handle_reversed_flow(datapath,p.src,p.dst,p.proto,sport,dport)
+                    
+
+                    """
+                    set action to mark Reversed flow, ON GW_DP
+                    """
+
+                elif self.is_video(msg.match):
+                    
+                    """
+                      send request
+                      elif it is video flow, then send a request 
+                    """
                 break
 
               
-                
+        match = parser.OFPMatch(**kwargs)      
         #actions = [parser.OFPActionOutput(out_port)]
-        #self.logger.debug(dir(parser))
         actions = [outqueue,parser.OFPActionOutput(out_port)]
-
-        # install a flow to avoid packet_in next time
+# install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
             self.logger.debug(dl_type)
-            if dl_type == ether.ETH_TYPE_IP: #ipv4
-                match = parser.OFPMatch(in_port=in_port, eth_dst=dst,eth_type=dl_type,ip_dscp=dscp)
-            else:
-                match = parser.OFPMatch(in_port=in_port,eth_dst=dst,eth_type=dl_type)
+        #if dl_type == ether.ETH_TYPE_IP: #ipv4
+        #            match = parser.OFPMatch(in_port=in_port, eth_dst=dst,eth_type=dl_type,ip_dscp=dscp)
+        #            else:
+        #            match = parser.OFPMatch(in_port=in_port,eth_dst=dst,eth_type=dl_type)
           
             # verify if we have a valid buffer_id, if yes avoid to send both
             # flow_mod & packet_out
@@ -156,3 +199,39 @@ class SimpleSwitch13(app_manager.RyuApp):
         out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
                                   in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
+    def is_video(self,match):
+        """
+            More details
+        """
+        tcp_dst = match.get('tcp_dst')
+        if tcp_dst is None:
+            return False
+        return tcp_dst== 8081
+    def _handle_reversed_flow(self,datapath,ipv4_src,ipv4_dst,ip_proto,sport,dport):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        
+        #if in flow from gateway, then ignore reversed flow 
+        if datapath.id == consts.GW_DP:
+            return
+
+        self.send_event_to_observers(MarkReversedEvent(ipv4_src,ipv4_dst,ip_proto,sport,dport))
+        
+        """
+        #no dscp, because we are going to set it
+        rmatch = OFPMatch(eth_src=match['eth_dst'],eth_dst=match['eth_src'],eth_type=match['eth_type'],ipv4_src=match['ipv4_dst'],ipv4_dst=['ipv4_src'])
+        action_set_dscp = parser.OFPActionSetField(ip_dscp=consts.EF)
+        inst_to_next_table = parser.OFPInstructionGotoTable(consts.POLICY_TABLE)
+
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+                                             [action_set_dscp])]
+        inst.append(inst_to_next_table)
+
+        dp = self.dpset.get(consts.GW_DP)
+        
+
+        mod = parser.OFPFlowMod(datapath=dp, table_id=consts.POLICY_TABLE,idle_timeout=idle_timeout,priority=10,
+                                    match=rmatch, instructions=inst)
+        dp.send_msg(mod)
+        """

@@ -4,40 +4,58 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BW_FACTOR	policy.py	/^BW_FACTOR = 1000 #with kbps$/;"	v
 CONF	NIB.py	/^CONF = cfg.CONF$/;"	v
 CTRL_PORT	NIB.py	/^CTRL_PORT = "6622"$/;"	v
 CommandFailure	RestRequestAPI.py	/^class CommandFailure(RyuException):$/;"	c
 DEFAULT_QUEUE	consts.py	/^DEFAULT_QUEUE = 0$/;"	v
 DP	switch.py	/^DP = 4$/;"	v
 EF	consts.py	/^EF = 0x2e$/;"	v
+FIELDS	ofmatch_wraper_v1_3.py	/^    FIELDS = ['ipv4_src','ipv4_dst','ip_proto','tcp_src','tcp_dst','ip_dscp']$/;"	v	class:OFPMatch_Wrapper
 Filter	filtering.py	/^class Filter(app_manager.RyuApp):$/;"	c
+GW_DP	consts.py	/^GW_DP = 4$/;"	v
+GW_Mark	gw_mark_reverse.py	/^class GW_Mark(app_manager.RyuApp):$/;"	c
 HostTracker	host_tracker.py	/^class HostTracker(app_manager.RyuApp):$/;"	c
+IP	multi_replay.py	/^IP = '114.212.85.130'$/;"	v
+IP	request.py	/^IP = '114.212.85.130'$/;"	v
+IP	request2.py	/^IP = '114.212.85.120'$/;"	v
+KEY_PORT	consts.py	/^KEY_PORT = 2$/;"	v
+LAM	multi_replay.py	/^LAM = 30      #paramter for poisson distribution$/;"	v
+LOG	multi_replay.py	/^LOG = logging.getLogger(__name__)$/;"	v
 LOG	newvsctl.py	/^LOG = logging.getLogger(__name__)$/;"	v
-LOG	switch.py	/^LOG =logging.getLogger(__name__)$/;"	v
+LOG	switch.py	/^LOG = logging.getLogger(__name__)$/;"	v
 MAXLEN	switch.py	/^MAXLEN = 500$/;"	v
-MAX_QOS_RATE	switch.py	/^MAX_QOS_RATE = "10000000"$/;"	v
+MAX_NUM	multi_replay.py	/^MAX_NUM =  len(files)$/;"	v
+MAX_QOS_RATE	switch.py	/^MAX_QOS_RATE = "50000000"$/;"	v
 MAX_SUSPENDPACKETS	RestRequestAPI.py	/^MAX_SUSPENDPACKETS = 50  # Threshold of the packet suspends thread count.$/;"	v
+MarkRevserseEvent	events.py	/^class MarkRevserseEvent(EventBase):$/;"	c
 NIB	NIB.py	/^class NIB(app_manager.RyuApp):$/;"	c
 NewVSCtl	newvsctl.py	/^class NewVSCtl(VSCtl):$/;"	c
 NotFoundError	RestRequestAPI.py	/^class NotFoundError(RyuException):$/;"	c
+OFPMatch_Wrapper	ofmatch_wraper_v1_3.py	/^class OFPMatch_Wrapper(object):$/;"	c
 OFP_VERSION	NIB.py	/^    OFP_VERSION = [ofproto_v1_3.OFP_VERSION]$/;"	v	class:NIB
 OFP_VERSIONS	RestRequestAPI.py	/^    OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION,$/;"	v	class:RestRequestAPI
 OFP_VERSIONS	Test.py	/^    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]$/;"	v	class:Test
 OFP_VERSIONS	filtering.py	/^    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]$/;"	v	class:Filter
+OFP_VERSIONS	gw_mark_reverse.py	/^    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]$/;"	v	class:GW_Mark
 OFP_VERSIONS	simple_switch_13.py	/^    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]$/;"	v	class:SimpleSwitch13
 OVSSwitch	switch.py	/^class OVSSwitch(OVSBridge):$/;"	c
 PHB	consts.py	/^PHB = 0x0e$/;"	v
 POLICY_ROUTING	consts.py	/^POLICY_ROUTING = ofproto.OFP_DEFAULT_PRIORITY$/;"	v
 POLICY_TABLE	consts.py	/^POLICY_TABLE = 0$/;"	v
+PORT	multi_replay.py	/^PORT = '8080'$/;"	v
+PORT	request.py	/^PORT = '8080'$/;"	v
+PORT	request2.py	/^PORT = '8080'$/;"	v
 PRIORITY_QUEUE	consts.py	/^PRIORITY_QUEUE = 1$/;"	v
 Policy	policy.py	/^class Policy(app_manager.RyuApp):$/;"	c
 QPOOL	switch.py	/^QPOOL = [{"min-rate":"4000000","num":6},{"min-rate":"2000000","num":6},{"min-rate":"1000000","num":6}]$/;"	v
+REPLAY_COMMAND	multi_replay.py	/^REPLAY_COMMAND = "tcpreplay" #interafce and filename$/;"	v
 REQ_TIMEOUT	RestRequestAPI.py	/^REQ_TIMEOUT = 5$/;"	v
 REST_ALL	RestRequestAPI.py	/^REST_ALL = 'failure'$/;"	v
-REST_DETAILS	RestRequestAPI.py	/^REST_DETAILS = 'default'$/;"	v
+REST_DETAILS	RestRequestAPI.py	/^REST_DETAILS = 'details'$/;"	v
 REST_NG	RestRequestAPI.py	/^REST_NG = 'not ok'$/;"	v
 REST_OK	RestRequestAPI.py	/^REST_OK = 'ok'$/;"	v
-REST_RESULT	RestRequestAPI.py	/^REST_RESULT = 'reult'$/;"	v
+REST_RESULT	RestRequestAPI.py	/^REST_RESULT = 'result'$/;"	v
 ROUTING_PRIORITY	consts.py	/^ROUTING_PRIORITY = ofproto.OFP_DEFAULT_PRIORITY$/;"	v
 ROUTING_TABLE	consts.py	/^ROUTING_TABLE = 1$/;"	v
 Reply	events.py	/^class Reply(EventBase):$/;"	c
@@ -56,26 +74,35 @@ TestEvent	Test.py	/^class TestEvent(event.EventBase):$/;"	c
 UINT16_MAX	RestRequestAPI.py	/^UINT16_MAX = 0xffff$/;"	v
 UINT32_MAX	RestRequestAPI.py	/^UINT32_MAX = 0xffffffff$/;"	v
 UINT64_MAX	RestRequestAPI.py	/^UINT64_MAX = 0xffffffffffffffff$/;"	v
-VIDEO_BANDWIDTH	switch.py	/^VIDEO_BANDWIDTH = 8000000$/;"	v
+URL	multi_replay.py	/^URL = '\/request\/bandwidth'$/;"	v
+URL	request.py	/^URL = '\/request\/bandwidth'$/;"	v
+URL	request2.py	/^URL = '\/request\/bandwidth'$/;"	v
+VIDEO_BANDWIDTH	switch.py	/^VIDEO_BANDWIDTH = 40000000$/;"	v
 VLANID_PATTERN	RestRequestAPI.py	/^VLANID_PATTERN = r'[0-9]{1,4}|all'$/;"	v
 _CONTEXTS	RestRequestAPI.py	/^    _CONTEXTS = {'dpset': dpset.DPSet,$/;"	v	class:RestRequestAPI
 _EVENTS	RestRequestAPI.py	/^    _EVENTS = [Req]$/;"	v	class:RestRequestAPI
 _EVENTS	Test.py	/^    _EVENTS=[events.Reply,TestEvent]$/;"	v	class:Test
 _EVENTS	filtering.py	/^    _EVENTS = [Reply,ReqWrapper]$/;"	v	class:Filter
 _EVENTS	policy.py	/^    _EVENTS = [Reply,ReqHost]$/;"	v	class:Policy
+_EVENTS	simple_switch_13.py	/^    _EVENTS = [events.MarkReversedEvent]$/;"	v	class:SimpleSwitch13
 _LOGGER	RestRequestAPI.py	/^    _LOGGER = None$/;"	v	class:RequestController
+__eq__	ofmatch_wraper_v1_3.py	/^    def __eq__(self,other):$/;"	m	class:OFPMatch_Wrapper	file:
+__hash__	ofmatch_wraper_v1_3.py	/^    def __hash__(self):$/;"	m	class:OFPMatch_Wrapper	file:
 __init__	NIB.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:NIB
 __init__	RestRequestAPI.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:RestRequestAPI
 __init__	RestRequestAPI.py	/^    def __init__(self,req,link,data,**config):$/;"	m	class:RequestController
 __init__	Test.py	/^    def __init__(self):$/;"	m	class:TestEvent
 __init__	Test.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:Test
+__init__	events.py	/^    def __init__(self,dpid,match):$/;"	m	class:MarkRevserseEvent
 __init__	events.py	/^    def __init__(self,mac,ip=None):$/;"	m	class:ReqHost
 __init__	events.py	/^    def __init__(self,req):$/;"	m	class:ReqWrapper
 __init__	events.py	/^    def __init__(self,req,flow,action):$/;"	m	class:Req
 __init__	events.py	/^    def __init__(self,req,status = "success"):$/;"	m	class:Reply
 __init__	filtering.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:Filter
+__init__	gw_mark_reverse.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:GW_Mark
 __init__	host_tracker.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:HostTracker
 __init__	newvsctl.py	/^    def __init__(self,remote):$/;"	m	class:NewVSCtl
+__init__	ofmatch_wraper_v1_3.py	/^    def __init__(self, ofpmatch):$/;"	m	class:OFPMatch_Wrapper
 __init__	policy.py	/^    def __init__(self,*args,**kwargs):$/;"	m	class:Policy
 __init__	simple_switch_13.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:SimpleSwitch13
 __init__	switch.py	/^    def __init__(self,CONF,datapath_id,ovsdb_addr,timeout=None,exception=None):$/;"	m	class:OVSSwitch
@@ -87,6 +114,8 @@ _delQueue	switch.py	/^    def _delQueue(self,portName,queues):$/;"	m	class:OVSSw
 _del_qos	newvsctl.py	/^    def _del_qos(self, ctx, port_name):$/;"	m	class:NewVSCtl
 _del_queue	newvsctl.py	/^    def _del_queue(self,ctx,port_name,queue_ids):$/;"	m	class:NewVSCtl
 _get_queues	newvsctl.py	/^    def _get_queues(self,ovsrec_qos,queue_ids):$/;"	m	class:NewVSCtl
+_handle_reversed_flow	gw_mark_reverse.py	/^    def _handle_reversed_flow(self,datapath,match):$/;"	m	class:GW_Mark
+_handle_reversed_flow	simple_switch_13.py	/^    def _handle_reversed_flow(self,datapath,match):$/;"	m	class:SimpleSwitch13
 _handler	Test.py	/^    def _handler(self,ev):$/;"	m	class:Test
 _notify_change	newvsctl.py	/^    def _notify_change(self,ovsrec_row):$/;"	m	class:NewVSCtl
 _packet_in_handler	simple_switch_13.py	/^    def _packet_in_handler(self, ev):$/;"	m	class:SimpleSwitch13
@@ -98,7 +127,7 @@ _setQueues	switch.py	/^    def _setQueues(self,portName,queues):$/;"	m	class:OVS
 addQueue	NIB.py	/^    def addQueue(self,datapathID,port_no,queues_desc):$/;"	m	class:NIB
 addSwitch	NIB.py	/^    def addSwitch(self,datapathID,ovswitch):$/;"	m	class:NIB
 add_flow	policy.py	/^    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=60):$/;"	m	class:Policy
-add_flow	simple_switch_13.py	/^    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=5):$/;"	m	class:SimpleSwitch13
+add_flow	simple_switch_13.py	/^    def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=30,table_id=consts.ROUTING_TABLE):$/;"	m	class:SimpleSwitch13
 adjustBW	switch.py	/^    def adjustBW(self,ofport):$/;"	m	class:OVSSwitch
 alpha	switch.py	/^alpha = 0.5$/;"	v
 cal_rate	switch.py	/^def cal_rate(deq):$/;"	f
@@ -108,7 +137,13 @@ delQueue	switch.py	/^    def delQueue(self,ofport,queues):$/;"	m	class:OVSSwitch
 delSwitch	NIB.py	/^    def delSwitch(self,datapathID):$/;"	m	class:NIB
 dpStateEventHandler	NIB.py	/^    def dpStateEventHandler(self,ev):$/;"	m	class:NIB
 expireHostEntries	host_tracker.py	/^    def expireHostEntries(self):$/;"	m	class:HostTracker
+files	multi_replay.py	/^files = ['h1.pcap','h2.pcap']$/;"	v
+flow	request.py	/^flow={}$/;"	v
+flow	request2.py	/^flow={}$/;"	v
 flow_removed_handler	policy.py	/^    def flow_removed_handler(self,ev):$/;"	m	class:Policy
+flows	request.py	/^flows = request['flows']$/;"	v
+flows	request2.py	/^flows = request['flows']$/;"	v
+getAvailBW	switch.py	/^    def getAvailBW(self,ofport):$/;"	m	class:OVSSwitch
 getMaxBW	switch.py	/^    def getMaxBW(self,ofport):$/;"	m	class:OVSSwitch
 getNextBW	switch.py	/^    def getNextBW(self,ofport,rate):$/;"	m	class:OVSSwitch
 getPort	switch.py	/^    def getPort(self,portNo):$/;"	m	class:OVSSwitch
@@ -118,18 +153,33 @@ getRate	switch.py	/^    def getRate(self,ofport,queue_id):$/;"	m	class:OVSSwitch
 getSwitch	NIB.py	/^    def getSwitch(self,datapathID):$/;"	m	class:NIB
 handler	filtering.py	/^    def handler(self,ev):$/;"	m	class:Filter
 isRouter	host_tracker.py	/^    def isRouter(self, mac):$/;"	m	class:HostTracker
+is_video	simple_switch_13.py	/^    def is_video(self,match):$/;"	m	class:SimpleSwitch13
+items	policy.py	/^    items = [(144,990),(487,436),(210,673),(567,58),(1056,897)]$/;"	v
 knapsack	policy.py	/^def knapsack(requests,avail):$/;"	f
+myknapsack	policy.py	/^def myknapsack(items,cap):$/;"	f
 overrider	newvsctl.py	/^    def overrider(method):$/;"	f	function:overrides
 overrides	newvsctl.py	/^def overrides(interface_class):$/;"	f
 packet_in_handler	host_tracker.py	/^    def packet_in_handler(self, ev):$/;"	m	class:HostTracker
 queue_stats_request	NIB.py	/^    def queue_stats_request(self):$/;"	m	class:NIB
 releaseQueue	switch.py	/^    def releaseQueue(self,ofport,queue_id):$/;"	m	class:OVSSwitch
+replay	multi_replay.py	/^def replay(intf,filename):$/;"	f
 replyRequest	policy.py	/^    def replyRequest(self):$/;"	m	class:Policy
+req	request.py	/^req=urllib2.Request('http:\/\/'+IP+':'+PORT+URL,str(request))$/;"	v
+req	request2.py	/^req=urllib2.Request('http:\/\/'+IP+':'+PORT+URL,str(request))$/;"	v
 req_bw	RestRequestAPI.py	/^    def req_bw(self,req,**_kwargs):$/;"	m	class:RequestController
+reqs	policy.py	/^    reqs = {1:2}$/;"	v
+request	request.py	/^request = {}$/;"	v
+request	request2.py	/^request = {}$/;"	v
 requestHandler	policy.py	/^    def requestHandler(self,ev):$/;"	m	class:Policy
+request_replay	multi_replay.py	/^def request_replay():$/;"	f
+requests	multi_replay.py	/^requests = [{"action":("req_bw",0),"user":'None',"flows":[{"src":"119.81.143.2","dst":"192.168.111.52","proto":"tcp"}]},$/;"	v
+resp	request.py	/^resp=urllib2.urlopen(req)$/;"	v
+resp	request2.py	/^resp=urllib2.urlopen(req)$/;"	v
 rest_command	RestRequestAPI.py	/^def rest_command(func):$/;"	f
+results	multi_replay.py	/^    results = waitAll(request_replay())$/;"	v
 run_command	switch.py	/^    def run_command(self, commands):$/;"	m	class:OVSSwitch
 sendEvent	RestRequestAPI.py	/^    def sendEvent(self,req):$/;"	m	class:RestRequestAPI
+send_request	multi_replay.py	/^def send_request(request):$/;"	f
 setQueueConfig	switch.py	/^    def setQueueConfig(self,ofport,queue_id=None, min_rate=MAX_QOS_RATE,max_rate=None,priority=2):$/;"	m	class:OVSSwitch
 setQueues	switch.py	/^    def setQueues(self,ofport,queues):$/;"	m	class:OVSSwitch
 set_logger	RestRequestAPI.py	/^    def set_logger(cls,logger):$/;"	m	class:RequestController
@@ -142,3 +192,4 @@ testDeletePort	switch.py	/^    def testDeletePort(self,br_name):$/;"	m	class:OVS
 testEventHandler	Test.py	/^    def testEventHandler(self,ev):$/;"	m	class:Test
 updateCounter	switch.py	/^    def updateCounter(self,ofport,queue_id,sec,nsec,tx_bytes,tx_packets=None):$/;"	m	class:OVSSwitch
 updateHostTable	host_tracker.py	/^    def updateHostTable(self, srcIP, dpid, port):$/;"	m	class:HostTracker
+waitAll	multi_replay.py	/^def waitAll(procs):$/;"	f

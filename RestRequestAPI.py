@@ -1,5 +1,4 @@
-# Nippon Telegraph and Telephone Corporation.
-#
+# Nippon Telegraph and Telephone Corporation.  #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -50,6 +49,7 @@ from policy import Policy
 from NIB import NIB
 from simple_switch_13 import SimpleSwitch13
 from host_tracker import HostTracker
+from gw_mark_reverse import GW_Mark
 # =============================
 #          REST API
 # =============================
@@ -109,7 +109,8 @@ class RestRequestAPI(app_manager.RyuApp):
                  'nib':NIB,
                  'dpset':DPSet,
                  'simpleswitch13':SimpleSwitch13,
-                 'host_tracker':HostTracker
+                 'host_tracker':HostTracker,
+                 'gw_mark':GW_Mark
 #'check':Check
                 }
     _EVENTS = [Req]
@@ -120,8 +121,7 @@ class RestRequestAPI(app_manager.RyuApp):
         if self.CONF.enable_debugger:
             self.logger.setLevel(logging.DEBUG)
 #DEBUG
-        self.logger.setLevel(logging.DEBUG)
-        print kwargs
+        self.logger.debug(kwargs)
 #
         wsgi = kwargs['wsgi']
         self.requests = {}

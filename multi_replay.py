@@ -3,6 +3,9 @@
 import subprocess
 import simplejson
 import logging
+import time
+
+from np import random 
 
 import urllib
 import urllib2
@@ -39,7 +42,7 @@ files = ['h1.pcap','h2.pcap']
 
 REPLAY_COMMAND = "tcpreplay" #interafce and filename
 MAX_NUM =  len(files)
-
+LAM = 30      #paramter for poisson distribution
 #default handler
 logging.basicConfig()
 LOG = logging.getLogger(__name__)
@@ -69,12 +72,15 @@ def waitAll(procs):
 def request_replay():
     assert len(requests) >= len(files)
     procs = []
+    intervals = random.poisson(LAM,len(files))
+    intervals[0] = 0 
     for idx in xrange(len(files)):
         "send requests, if success replay traffic"
+        time.sleep(intervals[idx])
         result,details = send_request(requests[idx])
         
-        if result == "ok":
-            procs.append(replay("h1-eth0",files[ids]))
+        if result == "ok" and details == "success":
+            procs.append(replay("h1-eth0",files[idx]))
         else:
             LOG.warning("request failed")
             break

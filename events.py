@@ -36,6 +36,15 @@ class ReqHost(EventBase):
         self.mac = mac
         self.ip = ip
 
+
+class MarkReversedEvent(EventBase):
+    def __init__(self,ipv4_src,ipv4_dst,ip_proto=None,sport=None,dport=None):
+        self.ipv4_src = ipv4_src
+        self.ipv4_dst = ipv4_dst
+        self.ip_proto = ip_proto
+        self.sport = sport
+        self.dport = dport
+
 if __name__ == "__main__":
     "test"
     print "test"
