@@ -194,6 +194,9 @@ class Policy(app_manager.RyuApp):
             DP = consts.GW_DP                        #4
             ofport = consts.KEY_PORT                 #2 #(s4 -eth2)
             sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
+            if sw is None:
+                self.logger.info("gatway(dpid=%d)have not been registered by now",DP)
+                continue
             
 
             #self.logger.debug(req.flows)
@@ -240,20 +243,31 @@ class Policy(app_manager.RyuApp):
                             self.logger.info("faileure srcIP=%s,dstIP=%s,ip_proto=%s,queue_id=%d"%(srcIP,dstIP,ip_proto,queue_id))
                             self.send_event(req.src,Reply(req,"failure"))
                             break
+                        kflow = {"eth_type":ether.ETH_TYPE_IP,
+                                 "ipv4_src":srcIP,
+                                 "ipv4_dst":dstIP
+                                 #"ip_dscp":consts.PHB
+                                 }
 
                         if ip_proto == 'tcp':
-                            match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_TCP,ip_dscp=consts.PHB)
+                            kflow["ip_proto"] = inet.IPPROTO_TCP
+                            
+#match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_TCP,ip_dscp=consts.PHB)
+                            
                             if srcPort is not None:
-                                match.set_tcp_src(srcPort)
+                                kflow["tcp_src"] = srcPort
                             if dstPort is not None:
-                                match.set_tcp_dst(dstPort)
-                        else:
-                            match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_UDP,ip_dscp=consts.PHB)
-                            if srcPort is not None:
-                                match.set_udp_src(srcPort)
-                            if dstPort is not None:
-                                match.set_udp_dst(dstPort)
+                                kflow["tcp_dst"] = dstPort
 
+                        elif ip_proto == 'udp':
+                            kflow["ip_proto"] = inet.IPPROTO_UDP
+#match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_UDP,ip_dscp=consts.PHB)
+                            if srcPort is not None:
+                                kflow["udp_src"] = srcPort
+                            if dstPort is not None:
+                                kflow["udp_dst"] = dstPort
+
+                        match = parser.OFPMatch(**kflow)
 
                         actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(ofport)]
                         self.add_flow(datapath,10,match,actions)
@@ -276,94 +290,6 @@ class Policy(app_manager.RyuApp):
                         self.logger.debug("Time used:%f",time.clock()-start)
                         self.logger.debug("sending replies")
                         self.send_event(req.src,Reply(req,"success"))
-
-
-                
-            """    
-            for req in semTmp:
-                #for each request
-                self.logger.debug(req.action)
-                self.logger.debug(req.flows)
-
-                self.logger.debug(sw_mac_to_port.mac_to_port)
-                DP = 4
-                sw_mac_to_port = sw_mac_to_port.mac_to_port.get(DP,{}) #5 is datapath id
-
-                sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
-
-
-
-                for flow in req.flows:
-                    srcIP  = flow['src']
-                    src = hosttracker.hosts.get(srcIP,None)
-                    if src is None:
-                        self.logger.debug("src is not found")
-                        break
-                    srcdp = src["dpid"]
-                    srcport = src['port']
-                    srcmac = src['mac']
-                    dstIP = flow['dst']
-                    dst = hosttracker.hosts.get(dstIP,None)
-                    if dst is None:
-                        self.logger.debug("dst is not found")
-                        break
-                    dstdp = dst['dpid']
-                    dstport = dst['port']
-                    dstmac = dst['mac']
-
-                    port_at_sw4 = sw_mac_to_port.get(dstmac,None)
-
-                    if port_at_sw4 is None:
-                        "Nothging"
-                        break
-                    self.logger.debug("the port to dst is at %d",port_at_sw4)
-                    
-                    bw = req.action[1] #min bandwidth
-                    if bw == 0:#
-                        queue_id = sw.getQueueWithBW(port_at_sw4)
-                    else:
-                        queue_id = sw.getQueueWithBW(port_at_sw4,bw)
-                    
-                    datapath = self.dpset.get(DP)
-                    parser = datapath.ofproto_parser
-                    match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_dscp=consts.PHB)
-                    actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(port_at_sw4)]
-                    self.add_flow(datapath,10,match,actions)
-                    dicts = self.matches.get(datapath.id,{})
-                    dicts[match] = (port_at_sw4,queue_id)
-                    self.matches[datapath.id] = dicts
-                    
-                    port = self.queueref.get(datapath.id,{})
-                    self.queueref[datapath.id] = port
-                    
-                    queue = port.get(port_at_sw4,{})
-                    queue.setdefault(queue_id,[0,semaphore.Semaphore(1)])
-                    with queue[queue_id][1]:
-                        queue[queue_id][0] += 1
-                        port[port_at_sw4] = queue
-                    
-            """   
-
-                          
-
-                    #get path here
-            """
-                    sw_list = get_all_switch(self)
-                    switches = [switch.dp.ip for switch in switch_list]
-                    self.logger.debug(switches)
-                    links_list = get_all_link(self)
-                    links = [(link.src.dpid,link.dst.dpid,{'port':link.src.port_no}) for link in links_list]
-            """
-
-
-#                self.send_event_to_observers(Reply(req))
-                 
-            """
-                1. get flow
-                2. find path
-                3. get queues
-                4. add-flow
-            """
      
     """add to table 0
     """
@@ -371,7 +297,6 @@ class Policy(app_manager.RyuApp):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        self.logger.info("add-flow-policy %s",match)
 
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                              actions)]
@@ -385,7 +310,7 @@ class Policy(app_manager.RyuApp):
         else:
             mod = parser.OFPFlowMod(datapath=datapath, table_id=consts.POLICY_TABLE,idle_timeout=idle_timeout,priority=priority,
                                     match=match,flags=ofproto.OFPFF_SEND_FLOW_REM, instructions=inst)
-        self.logger.debug("add-flow-policy %s",mod)
+        self.logger.info("add-flow-policy %s",mod)
         datapath.send_msg(mod)
 
 

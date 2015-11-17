@@ -8,7 +8,7 @@ from ryu.lib.ovs import vsctl
 
 from newvsctl import NewVSCtl
 LOG = logging.getLogger(__name__)
-#LOG.setLevel(logging.DEBUG)
+LOG.setLevel(logging.DEBUG)
 
 
 #from high to lower
@@ -323,7 +323,7 @@ class OVSSwitch(OVSBridge):
     def _setQueueConfig(self,ofport,queues):
         """set queue configuration
         """
-        LOG.debug("setQueueConfig:%s",queues)
+        LOG.debug("dpid = %d, port = %d, setQueueConfig:%s",self.datapath_id,ofport,queues)
         for queue in queues:
             queue["port_name"] = self.ports[ofport].port_name
         cmd = vsctl.VSCtlCommand(

@@ -187,7 +187,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                         flow['dst_port'] = dport
                         flow['proto'] = 'tcp' if kwargs['ip_proto'] == inet.IPPROTO_TCP else 'udp'
                         self.logger.debug("sending request %s",flow)
-                        flow_wrapper_object = Flow_Wrapper(ipv4_src=flow['src'],ipv4_dst=flow['dst'],ip_proto=flow['proto'],src_port=flow['src_port'],dst_port=flow['dst_port'])
+                        flow_wrapper_object = Flow_Wrapper(ipv4_src=flow['src'],ipv4_dst=flow['dst'],ip_proto=flow['ip_proto'],src_port=flow['src_port'],dst_port=flow['dst_port'])
                         if flow_wrapper_object not in self.flowDB:
                             self.flowDB.add(flow_wrapper_object)
                             self.send_event_to_observers(Req(self.name,None,[flow],('req_bw',0)))
