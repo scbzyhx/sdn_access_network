@@ -8,7 +8,7 @@ from ryu.lib.ovs import vsctl
 
 from newvsctl import NewVSCtl
 LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.DEBUG)
+#LOG.setLevel(logging.DEBUG)
 
 
 #from high to lower
@@ -58,6 +58,8 @@ def cal_rate(deq):
 class OVSSwitch(OVSBridge):
     def __init__(self,CONF,datapath_id,ovsdb_addr,timeout=None,exception=None):
         super(OVSSwitch,self).__init__(CONF,datapath_id,ovsdb_addr,5,exception)
+        if CONF.enable_debugger:
+            LOG.setLevel(logging.DEBUG)
         self.init()
         self.vsctl = NewVSCtl(ovsdb_addr)
         #objects are VifPort object in self.ports
@@ -178,7 +180,7 @@ class OVSSwitch(OVSBridge):
         LOG.info(port.queuePool["free"])
         LOG.info(port.queuePool["busy"])
 
-        port.used_bw -= bw #release bandwidth
+        port.used_bw -= float(bw) #release bandwidth
         port.queuePool["free"].append(queue_id)
         port.queuePool["busy"].remove(queue_id)
         del self.pqRate[ofport][queue_id]  #remove monitoring
@@ -212,7 +214,7 @@ class OVSSwitch(OVSBridge):
                 LOG.debug("rate is None, I don't know why")
                 return
             LOG.info("duration = %s, rate = %d, alloc_bandwidth=%s",duration,rate,bw)
-            if duration >= TIME and rate < alpha*bw:
+            if duration >= TIME and rate < alpha*float(bw):
                 new_bw = self.getNextBW(ofport,rate)
                 
                 LOG.info("new bw = %s",new_bw)
