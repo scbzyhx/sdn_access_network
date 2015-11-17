@@ -217,7 +217,7 @@ class Policy(app_manager.RyuApp):
             for ind,req in enumerate(semTmp):
      
                 if ind not in knapsack_set:
-                    self.send_event_to_observers(Reply(req,"failure"))
+                    self.send_event(req.src,Reply(req,"failure"))
                     continue
                 else:
                     bw = req.action[1] #min bandwidth
@@ -238,7 +238,7 @@ class Policy(app_manager.RyuApp):
                         ip_proto = flow.get('proto',None)
                         if srcIP is None or dstIP is None  or ip_proto is None or queue_id is None:
                             self.logger.info("faileure srcIP=%s,dstIP=%s,ip_proto=%s,queue_id=%d"%(srcIP,dstIP,ip_proto,queue_id))
-                            self.send_event_to_observers(Reply(req,"failure"))
+                            self.send_event(req.src,Reply(req,"failure"))
                             break
 
                         if ip_proto == 'tcp':
@@ -275,7 +275,7 @@ class Policy(app_manager.RyuApp):
                     else: #break would nerver come here
                         self.logger.debug("Time used:%f",time.clock()-start)
                         self.logger.debug("sending replies")
-                        self.send_event_to_observers(Reply(req,"success"))
+                        self.send_event(req.src,Reply(req,"success"))
 
 
                 

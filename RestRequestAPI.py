@@ -120,7 +120,7 @@ class RestRequestAPI(app_manager.RyuApp):
         RequestController.set_logger(self.logger)
         if self.CONF.enable_debugger:
             self.logger.setLevel(logging.DEBUG)
-#DEBUG
+#DEBUG 
         self.logger.debug(kwargs)
 #
         wsgi = kwargs['wsgi']
@@ -205,7 +205,7 @@ class RequestController(ControllerBase):
         self.reqs[req.client_addr] = _kwargs
         for realreq in req.POST.keys():
             reqdict = ast.literal_eval(realreq)
-            tmpReq = Req(req,reqdict['flows'],reqdict["action"])
+            tmpReq = Req(self.app.name,req,reqdict['flows'],reqdict["action"])
             evt = hub.Event()
             tmpReq.evt = evt
             self.app.sendEvent(tmpReq)

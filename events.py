@@ -11,7 +11,8 @@ from ryu.ofproto.ofproto_v1_3_parser import OFPMatch
 #@flow, indicate an flow, and OFPMatch object, but just some of its' field
 #@action, undefined
 class Req(EventBase):
-    def __init__(self,req,flow,action):
+    def __init__(self,src,req,flow,action):
+        self.src = src #it is an object of RyuApp
         self.req = req
         self.flows = flow
         self.action = action
@@ -23,6 +24,7 @@ class Reply(EventBase):
     def __init__(self,req,status = "success"):
         self.req = req
         self.status = status
+ 
 
 #
 #just a wraper event of Req  between filtering and policy
