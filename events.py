@@ -4,7 +4,6 @@
 #
 
 from ryu.controller.event import EventBase as EventBase
-from ryu.ofproto.ofproto_v1_3_parser import OFPMatch
 #a request from client
 #
 #@req, an Request object,including all info of request
@@ -47,7 +46,45 @@ class MarkReversedEvent(EventBase):
         self.sport = sport
         self.dport = dport
 
-if __name__ == "__main__":
-    "test"
-    print "test"
+class FlowEvent(EventBase):
+    def __init__(self,flows,dpid,ofport,qid,time):
+        self.flows = flows
+        self.time = time
+        self.dpid = dpid
+        self.ofport = ofport
+        self.qid = qid
+    def __str__(self):
+        s = "%s|%d|%d|%d|%s" % (self.time,self.dpid,self.ofport,self.qid,self.flows)
+        return s
+    def __repr__(self):
+        s = "%s|%d|%d|%d|%s" % (self.time,self.dpid,self.ofport,self.qid,self.flows)
+        return s
 
+
+
+
+class FlowRateEvent(EventBase):
+    def __init__(self,dpid,ofport,qid,time,bw,rate):
+        self.dpid = dpid
+        self.ofport = ofport
+        self.qid = qid
+        self.time = time
+        self.bw = bw
+        self.rate = rate
+    
+    def __str__(self):
+        s = "%s|%d|%d|%d|%f|%f" %(self.time,self.dpid,self.ofport,self.qid,self.bw,self.rate)
+        return s
+    def __repr__(self):
+        s = "%s|%d|%d|%d|%f|%f" %(self.time,self.dpid,self.ofport,self.qid,self.bw,self.rate)
+        return s
+
+
+if __name__ == "__main__":
+    pass
+    import time
+    flowe = FlowEvent([{"ipv4_src":"192.168.121.1","ipv4_dst":"192.168.131.1"}],1234,123,123,time.time())
+    print flowe
+
+    fr = FlowRateEvent(12354,123,123,time.time())
+    print fr

@@ -104,7 +104,7 @@ class NIB(app_manager.RyuApp):
                 del self.dps[datapath.id]
                 self.logger.debug("unregister datapath:%016x",ev.datapath.id)
             else:
-                self.logger.warn("unregister unconnected-datapath:%016x",ev.datapath.id)
+                self.logger.warn("unregister unconnected-datapath:%0x16x",ev.datapath.id if  ev.datapath.id is not None else -1)
     #
     @set_ev_cls(ofp_event.EventOFPQueueStatsReply,MAIN_DISPATCHER)
     def stats_handler(self,ev):

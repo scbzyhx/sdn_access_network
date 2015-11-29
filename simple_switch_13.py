@@ -183,8 +183,8 @@ class SimpleSwitch13(app_manager.RyuApp):
                         
                     flow ={"src":kwargs['ipv4_src'],"dst":kwargs['ipv4_dst']}
                     if sport is not None and dport is not None and (kwargs["ip_proto"] in (inet.IPPROTO_TCP,inet.IPPROTO_UDP)):
-                        flow['src_port'] = sport
-                        flow['dst_port'] = dport
+                        flow['src_port'] = 8081#sport
+                        flow['dst_port'] = None#dport
                         flow['proto'] = 'tcp' if kwargs['ip_proto'] == inet.IPPROTO_TCP else 'udp'
                         self.logger.debug("sending request %s",flow)
                         flow_wrapper_object = Flow_Wrapper(ipv4_src=flow['src'],ipv4_dst=flow['dst'],ip_proto=flow['proto'],src_port=flow['src_port'],dst_port=flow['dst_port'])
@@ -228,10 +228,11 @@ class SimpleSwitch13(app_manager.RyuApp):
             More details
         """
         self.logger.debug("is_video,match= %s",kwargs)
-        tcp_dst = kwargs.get('tcp_dst')
-        if tcp_dst is None:
+        tcp_src = kwargs.get('tcp_src')
+        if tcp_src is None:
             return False
-        return True #test tcp_dst== 8081
+        return True and tcp_src == 8081
+
     def _handle_reversed_flow(self,datapath,ipv4_src,ipv4_dst,ip_proto,sport,dport):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser

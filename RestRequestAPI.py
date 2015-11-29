@@ -49,7 +49,9 @@ from policy import Policy
 from NIB import NIB
 from simple_switch_13 import SimpleSwitch13
 from host_tracker import HostTracker
-from gw_mark_reverse import GW_Mark
+from gw_mark_reverse import GW_Mark 
+from log_info import LOG_INFO
+from trigger import Trigger
 # =============================
 #          REST API
 # =============================
@@ -110,7 +112,9 @@ class RestRequestAPI(app_manager.RyuApp):
                  'dpset':DPSet,
                  'simpleswitch13':SimpleSwitch13,
                  'host_tracker':HostTracker,
-                 'gw_mark':GW_Mark
+                 'gw_mark':GW_Mark,
+                 'log_info':LOG_INFO, 
+                 'trigger':Trigger
 #'check':Check
                 }
     _EVENTS = [Req]

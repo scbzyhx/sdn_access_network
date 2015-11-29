@@ -4,14 +4,12 @@ email:scbzyhx@gmail.com
 
 """
 import logging
-from eventlet import semaphore 
+from eventlet import semaphore,Timeout 
 import time
 
 from ryu.base import app_manager
 from ryu.controller.handler import set_ev_cls
-from ryu.controller.event import EventBase
 from ryu.lib import hub
-from ryu.topology.api import get_link,get_all_link,get_switch,get_all_switch
 from ryu.controller import ofp_event
 from ryu.ofproto import ofproto_v1_3_parser as ofproto
 from ryu.lib.packet import ether_types as ether
@@ -22,7 +20,7 @@ from events import Req
 from events import Reply
 from events import ReqWrapper
 from events import ReqHost #synchronized request
-
+from events import FlowRateEvent
 
 
 import consts
@@ -102,7 +100,7 @@ def myknapsack(items,cap):
 #@return is list of key, that is statisfied
 def knapsack(requests,avail):
     reqs = map(lambda x:(x/BW_FACTOR,1),requests.values())
-    return myknapsack(reqs,avail/BW_FACTOR) #return (list of satisfied request, )
+    return myknapsack(reqs,int(avail/BW_FACTOR)) #return (list of satisfied request, )
 
 if __name__ == "__main__":
     items = [(144,990),(487,436),(210,673),(567,58),(1056,897)]
@@ -110,16 +108,16 @@ if __name__ == "__main__":
     print knapsack(reqs,10)
 
 class Policy(app_manager.RyuApp):
-    _EVENTS = [Reply,ReqHost]
+    _EVENTS = [Reply,ReqHost,FlowRateEvent]
     def __init__(self,*args,**kwargs):
         super(Policy,self).__init__(*args,**kwargs)
         
-#        self.host_tracker = kwargs["host_tracker"]
         hdlr  = logging.StreamHandler()
-        fmt_str = '[RT][%(levelname)s] IN [%(funcName)s]: %(message)s'
+        fmt_str = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
         hdlr.setFormatter(logging.Formatter(fmt_str))
         self.logger.addHandler(hdlr)
-        
+        self.logger.propagate = False
+
         if self.CONF.enable_debugger:
             self.logger.setLevel(logging.DEBUG)
 
@@ -176,43 +174,55 @@ class Policy(app_manager.RyuApp):
             self.requestQ.append(ev.req)
 #TODO   
     def replyRequest(self):
+
+        count = 0
+
         while self.is_active:
             #do something
             semTmp = None
             #self.logger.debug("in reply thread")
             #speed up
             hub.sleep(0.01)
-            if len(self.requestQ) != 0:
 
-                with self.sem:
-                    semTmp = self.requestQ
-                    self.requestQ = []
-            else:
-                continue
+            with self.sem:
+                semTmp = self.requestQ
+                self.requestQ = []
+            
             start = time.clock()
 
             DP = consts.GW_DP                        #4
             ofport = consts.KEY_PORT                 #2 #(s4 -eth2)
             sw = self.nib.getSwitch(DP)              #yhx,4 4 4 4 4 4 4 4
             if sw is None:
-                self.logger.info("gatway(dpid=%d)have not been registered by now",DP)
+                self.logger.debug("gatway(dpid=4)have not been registered by now" )
                 continue
             
 
             #self.logger.debug(req.flows)
-            hosttracker = app_manager.lookup_service_brick("HostTracker")
-            sw_mac_to_port = app_manager.lookup_service_brick("SimpleSwitch13")
+            #hosttracker = app_manager.lookup_service_brick("HostTracker")
+            #sw_mac_to_port = app_manager.lookup_service_brick("SimpleSwitch13")
             
-            
-            sw.adjustBW(ofport)
+            try:
+                count = (count + 1)%1000
+                if count == 0:
+                    sw.adjustBW(ofport,self.func)
+
+
+            except Timeout as t:
+                self.logger.debug(t)
+                self.logger.debug("timeout when ajustbw,I should stop it here,but I did not!")
+
+            if len(semTmp) == 0:
+                continue
+
             requests = {}
             
             for index, req in enumerate(semTmp):
                 bw = req.action[1]
                 if bw == 0:
                     bw = sw.getMaxBW(ofport) #maxrate
-                requests[index] = req.action[1]
-            
+                requests[index] = bw #req.action[1]
+
             avail = sw.getAvailBW(ofport)
             self.logger.debug("available bandwidth:%d",avail)
             knapsack_set,total_bw = knapsack(requests,avail) 
@@ -232,6 +242,8 @@ class Policy(app_manager.RyuApp):
 
                     datapath = self.dpset.get(DP)
                     parser = datapath.ofproto_parser
+
+                    state = False
                     
                     for flow in req.flows:
                         srcIP  = flow.get('src',None)
@@ -240,9 +252,15 @@ class Policy(app_manager.RyuApp):
                         dstPort = flow.get('dst_port',None) #option
                         ip_proto = flow.get('proto',None)
                         if srcIP is None or dstIP is None  or ip_proto is None or queue_id is None:
-                            self.logger.info("faileure srcIP=%s,dstIP=%s,ip_proto=%s,queue_id=%d"%(srcIP,dstIP,ip_proto,queue_id))
-                            self.send_event(req.src,Reply(req,"failure"))
+                            self.logger.debug("not an legal flow")
+                            if state is False and queue_id is not None:
+                                sw.releaseQueue(ofport,queue_id)
+                            print srcIP," ",dstIP," hahha  ",req.src
+                            if srcIP == "0.0.0.0":
+                                print srcIP
+                                self.send_event(req.src,Reply(req,"failure"))
                             break
+
                         kflow = {"eth_type":ether.ETH_TYPE_IP,
                                  "ipv4_src":srcIP,
                                  "ipv4_dst":dstIP
@@ -252,7 +270,6 @@ class Policy(app_manager.RyuApp):
                         if ip_proto == 'tcp':
                             kflow["ip_proto"] = inet.IPPROTO_TCP
                             
-#match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_TCP,ip_dscp=consts.PHB)
                             
                             if srcPort is not None:
                                 kflow["tcp_src"] = srcPort
@@ -260,8 +277,8 @@ class Policy(app_manager.RyuApp):
                                 kflow["tcp_dst"] = dstPort
 
                         elif ip_proto == 'udp':
+
                             kflow["ip_proto"] = inet.IPPROTO_UDP
-#match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,ipv4_src=srcIP,ipv4_dst=dstIP,ip_proto=inet.IPPROTO_UDP,ip_dscp=consts.PHB)
                             if srcPort is not None:
                                 kflow["udp_src"] = srcPort
                             if dstPort is not None:
@@ -271,6 +288,7 @@ class Policy(app_manager.RyuApp):
 
                         actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(ofport)]
                         self.add_flow(datapath,10,match,actions)
+                        state = True
 
                         "update badnwdith"
                         dicts = self.matches.get(datapath.id,{})
@@ -310,9 +328,10 @@ class Policy(app_manager.RyuApp):
         else:
             mod = parser.OFPFlowMod(datapath=datapath, table_id=consts.POLICY_TABLE,idle_timeout=idle_timeout,priority=priority,
                                     match=match,flags=ofproto.OFPFF_SEND_FLOW_REM, instructions=inst)
-        self.logger.info("add-flow-policy %s",mod)
+        self.logger.debug("add-flow-policy haha:%s" % mod)
         datapath.send_msg(mod)
 
+    def func(self,dpid,ofport,qid,time,bw,rate):
+        self.send_event_to_observers(FlowRateEvent(dpid,ofport,qid,time,bw,rate))
 
-            #self.send_event_to_observers(Reply())
 

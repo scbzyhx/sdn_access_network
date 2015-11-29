@@ -1,12 +1,14 @@
 import logging
 import copy
 from collections import deque
+import time
 
 #from ofproto.ofproto_v1_3_parser import OFPInstructionGotoTable
 from ryu.lib.ovs.bridge import OVSBridge
 from ryu.lib.ovs import vsctl
 
 from newvsctl import NewVSCtl
+
 LOG = logging.getLogger(__name__)
 #LOG.setLevel(logging.DEBUG)
 
@@ -18,7 +20,7 @@ QPOOL = [{"min-rate":"4000000","num":6},{"min-rate":"2000000","num":6},{"min-rat
 DP = 4
 
 TIME = 30
-alpha = 0.5
+alpha = 0.7
 
 MAXLEN = 500
 MAX_QOS_RATE = "50000000"
@@ -35,12 +37,8 @@ def cal_rate(deq):
     isIndexError = False
     if len(deq) < 2:
         return (None,None)
-    while True:
-        try:
-            sec,nsec,tx_bytes,tx_packets = deq.pop()
-        except IndexError:
-            isIndexError = True
-            break
+    list_q = list(deq)
+    for (sec,nsec,tx_bytes,tx_packets) in reversed(list_q):
         if end is None:
             end = sec
             end_bytes = tx_bytes
@@ -49,8 +47,23 @@ def cal_rate(deq):
             start_bytes = tx_bytes
             if end - sec > TIME:
                 break
-    BYTE_TO_BIT = 8
 
+    #while True:
+    #    try:
+    #        sec,nsec,tx_bytes,tx_packets = deq.pop()
+    #    except IndexError:
+    #        isIndexError = True
+    #        break
+    #    if end is None:
+    #        end = sec
+    #        end_bytes = tx_bytes
+    #    else:
+    #        start = sec
+    #        start_bytes = tx_bytes
+    #        if end - sec > TIME:
+    #            break
+    BYTE_TO_BIT = 8
+    print("endtime=%d,starttime=%d,end_bytes=%d,start_byte=%d"%(end,start,end_bytes,start_bytes))
     return (end-start,BYTE_TO_BIT * float(end_bytes-start_bytes)/float(end-start))
 
 
@@ -161,20 +174,23 @@ class OVSSwitch(OVSBridge):
             queue_id = self.getQueue(ofport)
             if queue_id is None:
                 return None
+            
             self.setQueueConfig(ofport,queue_id,bw)
             port.used_bw += bw
             port.queueConfig[queue_id] = bw
             return queue_id
         return None #failed to allocate
 
-        
     
     def releaseQueue(self,ofport,queue_id):
         """relase a queue
         """
         port = self.ports[ofport]
-#if queue_id in port.queuePool["busy"]:
+        if queue_id not in port.queuePool["busy"]:
+            return
         bw = port.queueConfig[queue_id]
+
+        del port.queueConfig[queue_id]
         LOG.info("before release")     
         LOG.info(port.used_bw)
         LOG.info(port.queuePool["free"])
@@ -196,26 +212,32 @@ class OVSSwitch(OVSBridge):
         return (port.video_bw - port.used_bw)
 #TODO : MORE WORK HERE
     def getNextBW(self,ofport,rate):
-        port = self.ports[ofport]
-        for level,config in reversed(port.queueLevel.items()):
-            if config["min-rate"] > rate:
-                return config["min-rate"]
+        """rate is actually bandwidth"""
+        return str(int(rate) - 500000)
+        #port = self.ports[ofport]
+        #for level,config in reversed(port.queueLevel.items()):
+        #    if config["min-rate"] > rate:
+        #        return config["min-rate"]
 
 
 
 
     """adjust the speed of all busy queues at this port
     """
-    def adjustBW(self,ofport):
+    def adjustBW(self,ofport,func = None):
         port = self.ports[ofport]
+        print "port.queueConfig.items=",port.queueConfig
         for qid,bw in port.queueConfig.items(): #all occupied queues
             duration,rate = self.getRate(ofport,qid)
+            if func is not None:
+                func(self.datapath_id,ofport,qid,time.time(),float(bw),float(rate if rate is rate is not None else -1))
+
             if rate is None:
                 LOG.debug("rate is None, I don't know why")
                 return
-            LOG.info("duration = %s, rate = %d, alloc_bandwidth=%s",duration,rate,bw)
+            LOG.info("queue_id = %d,duration = %s, rate = %d, alloc_bandwidth=%s",qid,duration,rate,bw)
             if duration >= TIME and rate < alpha*float(bw):
-                new_bw = self.getNextBW(ofport,rate)
+                new_bw = self.getNextBW(ofport,bw)#rate)
                 
                 LOG.info("new bw = %s",new_bw)
                 assert int(new_bw) <= int(bw)
@@ -234,9 +256,7 @@ class OVSSwitch(OVSBridge):
     #update counter
     def updateCounter(self,ofport,queue_id,sec,nsec,tx_bytes,tx_packets=None):
         queues = self.pqRate[ofport]
-#LOG.debug("ofport=%d,queue-id=%d,sec=%d,nsec=%d,tx_bytes=%d",ofport,queue_id,sec,nsec,tx_bytes)
         if queue_id not in queues.keys():
-#LOG.debug("not recorded")
             return
         queues[queue_id].append((sec,nsec,tx_bytes,tx_packets))
         LOG.debug("queue_id=%d,desc=%d",queue_id,tx_bytes)
@@ -305,7 +325,7 @@ class OVSSwitch(OVSBridge):
     ###
     #queue_id is None means new queue,otherwise just modify a queue
     #return queue_id
-    def setQueueConfig(self,ofport,queue_id=None, min_rate=MAX_QOS_RATE,max_rate=None,priority=2):
+    def setQueueConfig(self,ofport,queue_id=None, min_rate=None,max_rate=MAX_QOS_RATE,priority=2):
         """interface for 
         """
         
