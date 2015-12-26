@@ -29,6 +29,7 @@ from ryu.lib.packet import udp, tcp
 from events import MarkReversedEvent, Reply,Req
 import consts
 from flow_wrapper import Flow_Wrapper
+VIDEO_PORT = 8081
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -183,7 +184,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                         
                     flow ={"src":kwargs['ipv4_src'],"dst":kwargs['ipv4_dst']}
                     if sport is not None and dport is not None and (kwargs["ip_proto"] in (inet.IPPROTO_TCP,inet.IPPROTO_UDP)):
-                        flow['src_port'] = 8081#sport
+                        flow['src_port'] = VIDEO_PORT#sport
                         flow['dst_port'] = None#dport
                         flow['proto'] = 'tcp' if kwargs['ip_proto'] == inet.IPPROTO_TCP else 'udp'
                         self.logger.debug("sending request %s",flow)
@@ -231,7 +232,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         tcp_src = kwargs.get('tcp_src')
         if tcp_src is None:
             return False
-        return True and tcp_src == 8081
+        return True and tcp_src == VIDEO_PORT
 
     def _handle_reversed_flow(self,datapath,ipv4_src,ipv4_dst,ip_proto,sport,dport):
         ofproto = datapath.ofproto

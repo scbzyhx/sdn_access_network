@@ -19,12 +19,14 @@ QPOOL = [{"min-rate":"4000000","num":6},{"min-rate":"2000000","num":6},{"min-rat
 
 DP = 4
 
-TIME = 30
-alpha = 0.7
+TIME = 60
+alpha = 0.9
 
 MAXLEN = 500
 MAX_QOS_RATE = "50000000"
 VIDEO_BANDWIDTH = 40000000
+
+DELTA_B = 500000
 #deq is deque maxlen is MAXLEN
 #each element is (sec,nsec,tx_bytes,tx_packets)
 """nanoseconds is ignored
@@ -154,7 +156,10 @@ class OVSSwitch(OVSBridge):
             port.queuePool["free"].remove(qid)
             port.queuePool["busy"].append(qid)
 
-            self.pqRate[ofport].setdefault(qid,deque(maxlen=MAXLEN))
+            self.pqRate[ofport].setdefault(qid,{})
+            self.pqRate[ofport][qid].setdefault("counter",deque(maxlen=MAXLEN))
+            self.pqRate[ofport][qid].setdefault("start",[])
+            #self.pqRate[ofport].setdefault(qid,deque(maxlen=MAXLEN))
             
             return qid
         return None
@@ -213,7 +218,7 @@ class OVSSwitch(OVSBridge):
 #TODO : MORE WORK HERE
     def getNextBW(self,ofport,rate):
         """rate is actually bandwidth"""
-        return str(int(rate) - 500000)
+        return str(int(rate) - DELTA_B)
         #port = self.ports[ofport]
         #for level,config in reversed(port.queueLevel.items()):
         #    if config["min-rate"] > rate:
@@ -228,16 +233,19 @@ class OVSSwitch(OVSBridge):
         port = self.ports[ofport]
         print "port.queueConfig.items=",port.queueConfig
         for qid,bw in port.queueConfig.items(): #all occupied queues
-            duration,rate = self.getRate(ofport,qid)
-            if func is not None:
-                func(self.datapath_id,ofport,qid,time.time(),float(bw),float(rate if rate is rate is not None else -1))
+            duration,rate, avg_dur, avg_rate = self.getRate(ofport,qid)
 
             if rate is None:
                 LOG.debug("rate is None, I don't know why")
                 return
-            LOG.info("queue_id = %d,duration = %s, rate = %d, alloc_bandwidth=%s",qid,duration,rate,bw)
-            if duration >= TIME and rate < alpha*float(bw):
-                new_bw = self.getNextBW(ofport,bw)#rate)
+            LOG.info("queue_id = %d,T_duration = %s, T_rate = %d,duration=%s,rate=%s alloc_bandwidth=%s",qid,duration,rate,avg_dur,avg_rate,bw)
+            if func is not None:
+                func(self.datapath_id,ofport,qid,time.time(),float(bw),float(rate if rate is rate is not None else -1))
+            
+            tune_rate = max(rate,avg_rate)
+            new_bw = self.getNextBW(ofport,bw)
+            if duration >= TIME and tune_rate < alpha*float(new_bw):
+                #new_bw = self.getNextBW(ofport,bw)#rate)
                 
                 LOG.info("new bw = %s",new_bw)
                 assert int(new_bw) <= int(bw)
@@ -249,8 +257,7 @@ class OVSSwitch(OVSBridge):
                 port.queueConfig[qid] = str(new_bw)
                 port.used_bw = port.used_bw - int(bw) + int(new_bw)  #adjust available bandwidth
             else:
-                 pass
-                 #don't adjust
+                 pass #don't adjust
 
         return port.video_bw - port.used_bw
     #update counter
@@ -258,16 +265,32 @@ class OVSSwitch(OVSBridge):
         queues = self.pqRate[ofport]
         if queue_id not in queues.keys():
             return
-        queues[queue_id].append((sec,nsec,tx_bytes,tx_packets))
+        queues[queue_id]["counter"].append((sec,nsec,tx_bytes,tx_packets))
+        if len(queues[queue_id]['start']) == 0:
+            queues[queue_id]['start'].append((sec,nsec,tx_bytes,tx_packets))
         LOG.debug("queue_id=%d,desc=%d",queue_id,tx_bytes)
 
     def getRate(self,ofport,queue_id):
         try:
-            q = copy.copy(self.pqRate[ofport][queue_id])
+            q = self.pqRate[ofport][queue_id]["counter"]
+            start_data = self.pqRate[ofport][queue_id]['start']
             """calculate speed here
             """
             deq = copy.copy(q)
-            return cal_rate(deq)
+            duration,rate = cal_rate(deq)
+
+            avg = None
+            total = None
+            if(len(start_data) >0 and len(deq) > 0):
+                st_sec,st_nsec,st_tx_bytes,st_tx_packets = start_data[0]
+                ed_sec,_,ed_tx_bytes,_ = deq[-1]
+                total = ed_sec - st_sec
+                if total != 0:
+                    avg = 8* float(ed_tx_bytes - st_tx_bytes)/float(total)
+
+            if duration >= TIME:
+                q.clear()
+            return (duration,rate,total,avg)
 
         except KeyError:
             return (None,None)
