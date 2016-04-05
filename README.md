@@ -5,13 +5,13 @@ The project includes source codes of *Conan* and a full version paper about *Con
 
 The source codes includes:
 
--- RestRequestAPI.py, provides APIs over HTTP for home gateway.
--- consts.py, some basic const used in this project.
--- events.py, event for comunication between different components in controller.
--- fliter.py, Filter to reject illegal requests. As this is just a demo, so no requests are filtered out.
--- newvsctl.py, VSCtl is inherited to add operations of modifying queues.
--- simple\_switch\_13.py, it provides routing module.
--- policy.py, core scheduling algorithm is implemented here.
+- RestRequestAPI.py, provides APIs over HTTP for home gateway.
+- consts.py, some basic const used in this project.
+- events.py, event for comunication between different components in controller.
+- fliter.py, Filter to reject illegal requests. As this is just a demo, so no requests are filtered out.
+- newvsctl.py, VSCtl is inherited to add operations of modifying queues.
+- simple\_switch\_13.py, it provides routing module.
+- policy.py, core scheduling algorithm is implemented here.
 
 
 
