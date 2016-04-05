@@ -15,6 +15,9 @@ class Req(EventBase):
         self.req = req
         self.flows = flow
         self.action = action
+        print "src=",src
+        print "flows=",flow
+        print "action=",action
 
 #
 #@req is an object of Request

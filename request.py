@@ -2,7 +2,7 @@
 
 import urllib
 import urllib2
-IP = '114.212.85.130'
+IP = '114.212.85.181'
 PORT = '8080'
 URL = '/request/bandwidth'
 

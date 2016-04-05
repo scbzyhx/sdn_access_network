@@ -23,7 +23,7 @@ TIME = 60
 alpha = 0.9
 
 MAXLEN = 500
-MAX_QOS_RATE = "50000000"
+MAX_QOS_RATE = "60000000"
 VIDEO_BANDWIDTH = 40000000
 
 DELTA_B = 500000
@@ -305,7 +305,8 @@ class OVSSwitch(OVSBridge):
         """
         #TODO: more description about queue
         #And including priority
-        queue_descs = [ {"queue-id":0,"min-rate":"1","max-rate":MAX_QOS_RATE,"priority":"0"},{"queue-id":1,"max-rate":MAX_QOS_RATE,"min-rate":"1000000","priority":"100"}]
+        queue_descs = [ {"queue-id":0,"min-rate":"1","max-rate":MAX_QOS_RATE,"priority":"0"},{"queue-id":1,"max-rate":MAX_QOS_RATE,"min-rate":"0","priority":"50"},{"queue-id":2,"max-rate":MAX_QOS_RATE,"min-rate":"0","priority":"100"}]
+        
         self._setQueues(portName,queue_descs)
         for ofport,port in self.ports.items():
             if port.port_name == portName:
@@ -325,7 +326,7 @@ class OVSSwitch(OVSBridge):
 #        LOG.debug("after None == port")
 
         queuesSet = set()
-        startID = 2
+        startID = 3
         for queue in queues:
             
             #find a startID

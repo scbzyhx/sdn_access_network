@@ -286,7 +286,7 @@ class Policy(app_manager.RyuApp):
 
                         match = parser.OFPMatch(**kflow)
 
-                        actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(ofport)]
+                        actions = [ parser.OFPActionSetQueue(queue_id),parser.OFPActionOutput(ofport)] #in fact, we could just setqueue, let output to routin module
                         self.add_flow(datapath,10,match,actions)
                         state = True
 
@@ -316,7 +316,9 @@ class Policy(app_manager.RyuApp):
         parser = datapath.ofproto_parser
 
 
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+        #inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+        #                                     actions)]
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_WRITE_ACTIONS,
                                              actions)]
 
         """add paramter table_id=consts.ROUTIN_TABLE to OFPFlowMod

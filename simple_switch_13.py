@@ -57,12 +57,42 @@ class SimpleSwitch13(app_manager.RyuApp):
         # 128, OVS will send Packet-In with invalid buffer_id and
         # truncated packet data. In that case, we cannot output packets
         # correctly.  The bug has been fixed in OVS v2.1.0.
+
+        #For non-IPv4 flows
+        
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
 
         #priority 0 means lowest priority
         self.add_flow(datapath, 0, match, actions,None,0)
+        
+        #setup multiple level priority queues
+        #1. LOWEST priority
+        dscp_queue = {
+                consts.EF : consts.HIGHEST_PRIORITY_QUEUE,
+                consts.PHB: consts.PRIORITY_QUEUE,
+                consts.DEFAULT: consts.DEFAULT_QUEUE
+                }
+        
+        kwargs = {"eth_type":0x800} #dependicy in OpenFlow protocols, after 1.1 maybe
+        
+        for dscp, queue in dscp_queue.items():
+            print "setup feedback queues"
+            ##write setqueue action to action set and direct it to routing table
+            inst = [parser.OFPInstructionActions(ofproto.OFPIT_WRITE_ACTIONS,[parser.OFPActionSetQueue(queue)]),
+                    parser.OFPInstructionGotoTable(consts.ROUTING_TABLE)] 
+            
+            kwargs['ip_dscp'] = dscp
+            match = parser.OFPMatch(**kwargs)
+
+            mod = parser.OFPFlowMod(datapath=datapath, table_id=consts.POLICY_TABLE,idle_timeout=0,priority=consts.FEEDBACK_QUEUE_RULE_PRIORITY,
+                                       match=match, instructions=inst)
+        
+                
+            datapath.send_msg(mod)
+
+
 
     def add_flow(self, datapath, priority, match, actions, buffer_id=None,idle_timeout=30,table_id=consts.ROUTING_TABLE):
         ofproto = datapath.ofproto
@@ -70,7 +100,10 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         self.logger.debug("add-flow %s",match)
 
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+        #inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+        #                                     actions)]
+        #add it into action set
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_WRITE_ACTIONS,
                                              actions)]
 
         """add paramter table_id=consts.ROUTIN_TABLE to OFPFlowMod
@@ -128,11 +161,12 @@ class SimpleSwitch13(app_manager.RyuApp):
                  }
         """action: Enqueue
         """
-        outqueue = parser.OFPActionSetQueue(consts.DEFAULT_QUEUE)
-        priority = 5
+#        outqueue = parser.OFPActionSetQueue(consts.DEFAULT_QUEUE)
+        priority = consts.ROUTING_RULE_PRIORITY
         for p in pkt.protocols:
             if type(p) == type(""):
                 continue
+           
             if p.protocol_name == "ipv4":
                 """
                 first, get the flow
@@ -161,19 +195,19 @@ class SimpleSwitch13(app_manager.RyuApp):
                     """
                     prepare exactly match
                     """
-                    self.logger.debug("type of p is %s", type(p))
-                    self.logger.debug("p.tos eq 0x2e here")
-                    outqueue = parser.OFPActionSetQueue(consts.PRIORITY_QUEUE)
-
-                    priority = 10
-                    kwargs['ip_dscp'] = consts.EF
-                    #test
-                    #dscp  = consts.EF
-
-                    """
-                    set action to mark Reversed flow, ON GW_DP
-                    """
-                    self._handle_reversed_flow(datapath,p.src,p.dst,p.proto,sport,dport)
+#                    self.logger.debug("type of p is %s", type(p))
+#                    self.logger.debug("p.tos eq 0x2e here")
+#                    outqueue = parser.OFPActionSetQueue(consts.PRIORITY_QUEUE)
+#
+#                    priority = 10
+#                    kwargs['ip_dscp'] = consts.EF
+#                    #test
+#                    #dscp  = consts.EF
+#
+#                    """
+#                    set action to mark Reversed flow, ON GW_DP
+#                    """
+#                    self._handle_reversed_flow(datapath,p.src,p.dst,p.proto,sport,dport)
 
                 elif self.is_video(**kwargs):
                     
@@ -198,10 +232,9 @@ class SimpleSwitch13(app_manager.RyuApp):
 
                 break
 
-              
         match = parser.OFPMatch(**kwargs)      
-        #actions = [parser.OFPActionOutput(out_port)]
-        actions = [outqueue,parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(out_port)] # queue is set by policy
+        #actions = [outqueue,parser.OFPActionOutput(out_port)]
         # install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
             self.logger.debug(dl_type)
@@ -218,12 +251,14 @@ class SimpleSwitch13(app_manager.RyuApp):
             else:
                 self.add_flow(datapath, priority, match, actions)
         data = None
+        
         if msg.buffer_id == ofproto.OFP_NO_BUFFER:
             data = msg.data
 
         out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
                                   in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
+
     def is_video(self,**kwargs):
         """
             More details
@@ -262,3 +297,4 @@ class SimpleSwitch13(app_manager.RyuApp):
                                     match=rmatch, instructions=inst)
         dp.send_msg(mod)
         """
+
